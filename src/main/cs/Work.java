@@ -25,6 +25,7 @@ public class Work extends Thread{
             long ram = Runtime.getRuntime().freeMemory();
             out.writeInt(cores);
             out.writeLong(ram);
+            out.flush();
             out.writeInt(2*in.readInt());
             out.flush();
         }
