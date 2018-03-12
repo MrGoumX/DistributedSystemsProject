@@ -14,7 +14,7 @@ public class Master extends Thread{
         this.ip = ip;
     }
 
-    public void run(){
+    public synchronized void run(){
         Socket req = null;
         ObjectInputStream in = null;
         ObjectOutputStream out = null;
