@@ -1,46 +1,28 @@
 package main.cs;
 
 import java.io.IOException;
-import java.io.ObjectOutputStream;
+import java.net.ServerSocket;
 import java.net.Socket;
-import java.io.ObjectInputStream;
-import java.net.UnknownHostException;
 
-public class Worker extends Thread{
-
-    Worker(){
-
+public class Worker extends Thread {
+    ServerSocket server;
+    Socket dis;
+    private int port = 8888;
+    public static void main(String args[]){
+        new Worker().openServer();
     }
-
-    public void run(){
-        Socket req = null;
-        ObjectInputStream in = null;
-        ObjectOutputStream out = null;
-        try {
-            req = new Socket("localhost", 8888);
-            out = new ObjectOutputStream(req.getOutputStream());
-            in = new ObjectInputStream(req.getInputStream());
-
-
-
-
-            out.flush();
-        }
-        catch (UnknownHostException u){
-            System.out.println("Unkown host");
+    private void openServer() {
+        try{
+            server = new ServerSocket(port, 3);
+            while(true){
+                dis = server.accept();
+                System.out.println("New info");
+                Thread T = new Worker();
+                T.start();
+            }
         }
         catch(IOException e){
             e.printStackTrace();
-        }
-        finally {
-            try{
-                in.close();
-                out.close();
-                req.close();
-            }
-            catch (IOException e){
-                e.printStackTrace();
-            }
         }
     }
 }
