@@ -17,7 +17,7 @@ public class Worker extends Thread {
             while(true){
                 dis = server.accept();
                 System.out.println("New info");
-                Thread T = new Worker();
+                Thread T = new Work(dis);
                 T.start();
             }
         }
