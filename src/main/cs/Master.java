@@ -7,14 +7,14 @@ import java.io.ObjectInputStream;
 import java.net.UnknownHostException;
 
 public class Master extends Thread{
-    String ip;
-    int cores;
-    long ram;
+    private String ip;
+    private int cores;
+    private long ram;
     Master(String ip){
         this.ip = ip;
     }
 
-    public synchronized void run(){
+    public void run(){
         Socket req = null;
         ObjectInputStream in = null;
         ObjectOutputStream out = null;
@@ -23,27 +23,32 @@ public class Master extends Thread{
             out = new ObjectOutputStream(req.getOutputStream());
             in = new ObjectInputStream(req.getInputStream());
             cores = in.readInt();
+            //System.out.println(cores);
             ram = in.readLong();
+            //System.out.println(ram);
             out.writeInt(2);
             out.flush();
             System.out.println(in.readInt());
-        }
-        catch (UnknownHostException u){
+        } catch (UnknownHostException u) {
             System.out.println("Unkown host");
-        }
-        catch(IOException e){
+        } catch (IOException e) {
             e.printStackTrace();
-        }
-        finally {
-            try{
+        } finally {
+            try {
                 in.close();
                 out.close();
                 req.close();
-            }
-            catch (IOException e){
+            } catch (IOException e) {
                 e.printStackTrace();
             }
         }
+    }
+    public int getCores(){
+        return cores;
+    }
+
+    public long getRam(){
+        return ram;
     }
 
     public static void main(String[] args) throws InterruptedException {

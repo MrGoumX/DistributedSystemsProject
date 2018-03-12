@@ -19,12 +19,13 @@ public class Work extends Thread{
         }
     }
 
-    public synchronized void run(){
+    public void run(){
         try{
             int cores = Runtime.getRuntime().availableProcessors();
             long ram = Runtime.getRuntime().freeMemory();
             out.writeInt(cores);
             out.writeLong(ram);
+            out.writeInt(2*in.readInt());
             out.flush();
         }
         catch(IOException e){
