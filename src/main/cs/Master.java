@@ -19,7 +19,7 @@ public class Master extends Thread{
         ObjectInputStream in = null;
         ObjectOutputStream out = null;
         try {
-            req = new Socket(ip, 8888);
+            req = new Socket(ip, 4200);
             out = new ObjectOutputStream(req.getOutputStream());
             in = new ObjectInputStream(req.getInputStream());
             cores = in.readInt();
