@@ -7,7 +7,7 @@ import java.net.Socket;
 public class Worker extends Thread {
     ServerSocket server;
     Socket dis;
-    private int port = 8888;
+    private int port = 4200;
     public static void main(String args[]){
         new Worker().openServer();
     }
