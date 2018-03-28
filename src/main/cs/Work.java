@@ -66,19 +66,8 @@ public class Work extends Thread implements Serializable{
             sor = POIS.getColumnDimension();
             double min = Double.MAX_VALUE, thres = 0, lamda = 0.01;
             initMatrices();
-            for(int i = 0; i < 500; i++){
-                trainU();
-                trainI();
-                if(i > 0){
-                    double temp = min;
-                    min = getError();
-                    thres = min - temp;
-                }
-                if(thres < 0.005){
-                    break;
-                }
-                System.out.println("Trained with error " + thres);
-            }
+            trainU();
+            trainI();
             out.writeObject(U);
             out.writeObject(I);
 
@@ -201,16 +190,5 @@ public class Work extends Thread implements Serializable{
             I.setRowMatrix(i, FS);
             System.out.println(i);
         }
-    }
-
-    private double getError(){
-        for(int i = 0; i < sol; i++){
-            for(int j = 0; j < sor; j++){
-                double[][] temp = (I.getRowMatrix(i).multiply(U.getRowMatrix(i).transpose())).getData();
-                err += C.getEntry(i,j)*(pow((POIS.getEntry(i,j)-temp[0][0]),2));
-            }
-        }
-        err -= lamda*(I.getFrobeniusNorm() + U.getFrobeniusNorm());
-        return err;
     }
 }
