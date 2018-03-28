@@ -11,6 +11,7 @@ public class Worker extends Thread {
     public static void main(String args[]){
         new Worker().openServer();
     }
+
     private void openServer() {
         try{
             server = new ServerSocket(port, 3);

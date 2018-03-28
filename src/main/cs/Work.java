@@ -3,16 +3,18 @@ package main.cs;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.net.Socket;
 
-public class Work extends Thread{
+public class Work extends Thread implements Serializable{
     ObjectInputStream in;
     ObjectOutputStream out;
+    private String message;
 
     public Work(Socket connection){
         try{
-            in = new ObjectInputStream(connection.getInputStream());
             out = new ObjectOutputStream(connection.getOutputStream());
+            in = new ObjectInputStream(connection.getInputStream());
         }
         catch (IOException e){
             e.printStackTrace();
@@ -20,11 +22,29 @@ public class Work extends Thread{
     }
 
     public void run(){
+        try {
+            String bind = "Hello, I'm a worker";
+            out.writeObject(bind);
+            out.flush();
+            message = (String) in.readObject();
+        }
+        catch (IOException e){
+            e.printStackTrace();
+        }
+        catch (ClassNotFoundException e){
+            e.printStackTrace();
+        }
+        if(message.equalsIgnoreCase("Stats")){
+            sendStats();
+        }
+        else if(message.equalsIgnoreCase("Close")){
+            close();
+        }
+    }
+
+    private void sendStats(){
         try{
-            int cores = Runtime.getRuntime().availableProcessors();
-            long ram = Runtime.getRuntime().freeMemory();
-            out.writeInt(cores);
-            out.writeLong(ram);
+            out.writeObject(HWInfo.getInfo());
             out.flush();
             out.writeInt(2*in.readInt());
             out.flush();
@@ -32,14 +52,14 @@ public class Work extends Thread{
         catch(IOException e){
             e.printStackTrace();
         }
-        finally {
-            try{
-                in.close();
-                out.close();
-            }
-            catch (IOException e){
-                e.printStackTrace();
-            }
+    }
+
+    private void close(){
+        try {
+            in.close();
+            out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }
