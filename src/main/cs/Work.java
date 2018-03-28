@@ -101,12 +101,6 @@ public class Work extends Thread implements Serializable{
     }
 
     private void initMatrices() {
-        Bin = new OpenMapRealMatrix(sol, sor);
-        for(int i = 0; i < sol; i++){
-            for(int j = 0; j < sor; j++){
-                Bin.setEntry(i, j, (POIS.getEntry(i,j) > 0) ? 1 : 0);
-            }
-        }
         C = new OpenMapRealMatrix(sol, sor);
         for(int i = 0; i < sol; i++){
             for(int j = 0; j < sor; j++){

@@ -21,7 +21,7 @@ public class MasterNode {
     private String line, del = ";";
     private BufferedReader br = null;
     private OpenMapRealMatrix POIS, C, Bin;
-    private int sol, sor;
+    private int sol, sor, temp;
     private RealMatrix U, I;
     private double err = 0, min = Double.MAX_VALUE, thres = 1, lamda = 0.01;
 
@@ -50,7 +50,7 @@ public class MasterNode {
         }
         for(int i = 0; i < args.length; i++){
             int temp = 0;
-            temp += conn_cores[i]*10;
+            temp += conn_cores[i]*1;
             temp += conn_ram[i]/1073741824;
             scores[i] = temp;
         }
@@ -60,14 +60,15 @@ public class MasterNode {
             sum += scores[i];
         }
         int mo = sum/scores.length;
+        System.out.println(mo);
         int s = POIS.getRowDimension()/mo;
         for(int i = 0; i < 500; i++){
             for(int j = 0; j < args.length; j++){
-                int temp = 0;
                 int rows = s*scores[j];
                 if (j == args.length-1 && rows!=POIS.getRowDimension()){
                     rows = POIS.getRowDimension()-1;
                 }
+                System.out.println(rows);
                 conn[j] = new Master(args[j], "Dist", POIS.getSubMatrix(temp, rows, 0, POIS.getColumnDimension()-1),temp, rows, lamda);
                 temp = rows;
             }
@@ -98,7 +99,7 @@ public class MasterNode {
 
     private void initialize() throws IOException{
         try{
-            br = new BufferedReader(new FileReader("C:/Users/MrGoumX/Projects/DistributedSystemsProject/src/main/cs/Dataset1_WZ.csv"));
+            br = new BufferedReader(new FileReader("C:/Users/MrGoumX/IdeaProjects/DistributedSystemsProject/src/main/cs/Test.csv"));
         }
         catch (IOException e){
             e.printStackTrace();
@@ -114,15 +115,6 @@ public class MasterNode {
                 POIS.setEntry(i, j, Integer.parseInt(lines.get(i)[j]));
             }
         }
-    }
-
-    public int getRecommendation(int row, int col){
-        double[][] rec = I.getRowMatrix(row).transpose().multiply(U.getRowMatrix(col)).getData();
-        int temp = (int) Math.round(rec[0][0]);
-        return temp;
-    }
-
-    private void calcPC(){
         Bin = new OpenMapRealMatrix(sol, sor);
         for(int i = 0; i < sol; i++){
             for(int j = 0; j < sor; j++){
@@ -136,6 +128,13 @@ public class MasterNode {
             }
         }
     }
+
+    public int getRecommendation(int row, int col){
+        double[][] rec = I.getRowMatrix(row).transpose().multiply(U.getRowMatrix(col)).getData();
+        int temp = (int) Math.round(rec[0][0]);
+        return temp;
+    }
+
     private double getError(){
         for(int i = 0; i < sol; i++){
             for(int j = 0; j < sor; j++){
