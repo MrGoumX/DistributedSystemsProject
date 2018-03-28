@@ -62,10 +62,13 @@ public class MasterNode {
             int temp = 0;
             int rows = s*scores[i];
             if (i == args.length-1 && rows!=POIS.getRowDimension()){
-                rows = POIS.getRowDimension();
+                rows = POIS.getRowDimension()-1;
             }
-            conn[i] = new Master(args[i], "Dist", POIS.getSubMatrix(temp, rows, 0, POIS.getColumnDimension()),temp, rows, 0.01);
+            conn[i] = new Master(args[i], "Dist", POIS.getSubMatrix(temp, rows, 0, POIS.getColumnDimension()-1),temp, rows, 0.01);
             temp = rows;
+        }
+        for(Master i : conn){
+            i.start();
         }
         for(Master i : conn){
             i.join();

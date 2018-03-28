@@ -92,6 +92,7 @@ public class Master extends Thread{
     private void sendMatrices() {
         try{
             out.writeObject(message);
+            System.out.println(message);
             out.flush();
             out.writeObject(marix);
             out.writeDouble(lamda);

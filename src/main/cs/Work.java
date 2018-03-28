@@ -39,6 +39,7 @@ public class Work extends Thread implements Serializable{
             out.writeObject(bind);
             out.flush();
             message = (String) in.readObject();
+            System.out.println(message);
         }
         catch (IOException e){
             e.printStackTrace();
