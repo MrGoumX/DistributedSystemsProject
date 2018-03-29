@@ -1,5 +1,6 @@
 package main.cs;
 
+import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.OpenMapRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
 
@@ -21,7 +22,7 @@ public class MasterNode {
     private String line, del = ";";
     private BufferedReader br = null;
     private OpenMapRealMatrix POIS, C, Bin;
-    private int sol, sor, temp;
+    private int sol, sor, soo, n, temp;
     private RealMatrix U, I;
     private double err = 0, min = Double.MAX_VALUE, thres = 1, lamda = 0.01;
 
@@ -35,7 +36,6 @@ public class MasterNode {
         conn_ram = new long[args.length];
         scores = new int[args.length];
         for(int i = 0; i < args.length; i++){
-            System.out.println(args[i]);
             conn[i] = new Master(args[i], "Stats");
         }
         for(Master i : conn){
@@ -49,28 +49,37 @@ public class MasterNode {
             conn_ram[i] = conn[i].getRam();
         }
         for(int i = 0; i < args.length; i++){
-            int temp = 0;
-            temp += conn_cores[i]*1;
-            temp += conn_ram[i]/1073741824;
-            scores[i] = temp;
+            int temp2 = 0;
+            temp2 += conn_cores[i]*1;
+            temp2 += conn_ram[i]/1073741824;
+            scores[i] = temp2;
         }
         initialize();
         int sum = 0;
         for(int i = 0; i < args.length; i++){
             sum += scores[i];
         }
-        int fin = POIS.getRowDimension()/sum;
-        for(int j = 0; j < args.length; j++){
-            int rows = fin*scores[j];
-
-            if (j == args.length-1 && rows!=POIS.getRowDimension()){
-                rows = POIS.getRowDimension()-1;
-            }
-            System.out.println(rows);
-            conn[j] = new Master(args[j], "Dist", POIS.getSubMatrix(temp, rows, 0, POIS.getColumnDimension()-1),temp, rows, lamda);
-            temp = rows;
-        }
+        int mo = sum/scores.length;
+        int s = POIS.getRowDimension()/mo;
+        soo = sol*sor;
+        n = soo/(sol+sor);
+        U = MatrixUtils.createRealMatrix(sol, n);
+        I = MatrixUtils.createRealMatrix(sor, n);
         for(int i = 0; i < 500; i++){
+            for(int j = 0; j < args.length; j++){
+                int temp3 = 0;
+                int rows = s*scores[j];
+                if (j == args.length-1 && rows!=POIS.getRowDimension()){
+                    rows = POIS.getRowDimension()-1;
+                }
+                if(j == 0) {
+                    conn[j] = new Master(args[j], "InitDist", POIS.getSubMatrix(temp3, rows, 0, POIS.getColumnDimension() - 1), temp3, rows, lamda);
+                }
+                else{
+                    conn[j] = new Master(args[j], "Dist", temp3, POIS.getSubMatrix(temp, rows, 0, POIS.getColumnDimension() - 1), U, I, lamda);
+                }
+                temp3 = rows;
+            }
             for(Master k : conn){
                 k.start();
             }
@@ -79,13 +88,12 @@ public class MasterNode {
             }
             for(int j = 0; j < args.length; j++){
                 int s1 = conn[j].getStart();
-                double[][] Udata = conn[j].getU().getData();
-                double[][] Idata = conn[j].getI().getData();
-                System.out.println(j);
+                //System.out.println(s1);
+                double[][] Udata = conn[j].getU();
+                double[][] Idata = conn[j].getI();
                 U.setSubMatrix(Udata, s1, 0);
                 I.setSubMatrix(Idata, s1, 0);
             }
-
             if(i > 0){
                 double temp = min;
                 min = getError();
@@ -100,7 +108,7 @@ public class MasterNode {
 
     private void initialize() throws IOException{
         try{
-            br = new BufferedReader(new FileReader("C:/Users/MrGoumX/IdeaProjects/DistributedSystemsProject/src/main/cs/Test.csv"));
+            br = new BufferedReader(new FileReader("C:/Users/MrGoumX/Projects/DistributedSystemsProject/src/main/cs/Test.csv"));
         }
         catch (IOException e){
             e.printStackTrace();
@@ -132,7 +140,7 @@ public class MasterNode {
 
     public int getRecommendation(int row, int col){
         double[][] rec = I.getRowMatrix(row).transpose().multiply(U.getRowMatrix(col)).getData();
-        int temp = (int) Math.round(rec[0][0]);
+        //int temp = (int) Math.round(rec[0][0]);
         return temp;
     }
 

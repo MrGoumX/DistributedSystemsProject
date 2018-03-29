@@ -17,7 +17,7 @@ public class Worker extends Thread {
             server = new ServerSocket(port, 3);
             while(true){
                 dis = server.accept();
-                System.out.println("New info");
+                //System.out.println("New info");
                 Thread T = new Work(dis);
                 T.start();
             }

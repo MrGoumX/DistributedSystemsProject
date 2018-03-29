@@ -9,8 +9,6 @@ import org.apache.commons.math3.random.JDKRandomGenerator;
 import java.io.*;
 import java.net.Socket;
 
-import static java.lang.StrictMath.pow;
-
 public class Work extends Thread implements Serializable{
     private ObjectInputStream in;
     private ObjectOutputStream out;
@@ -20,6 +18,7 @@ public class Work extends Thread implements Serializable{
     private OpenMapRealMatrix Bin, C;
     private RealMatrix U, I, orm, ocm, ncm, UT, IT, MI, FS, MU;
     private JDKRandomGenerator ran = null;
+    private double[][] Udata, Idata;
     private double[] or, oc, nc, row, col;
     private double lamda, err = 0;
 
@@ -33,13 +32,12 @@ public class Work extends Thread implements Serializable{
         }
     }
 
-    public void run(){
+    public synchronized void run(){
         try {
             String bind = "Hello, I'm a worker";
             out.writeObject(bind);
             out.flush();
             message = (String) in.readObject();
-            System.out.println(message);
         }
         catch (IOException e){
             e.printStackTrace();
@@ -50,26 +48,58 @@ public class Work extends Thread implements Serializable{
         if(message.equalsIgnoreCase("Stats")){
             sendStats();
         }
+        else if(message.equalsIgnoreCase("InitDist")){
+            initTrain();
+        }
         else if(message.equalsIgnoreCase("Dist")){
-            Train();
+            train();
         }
         else if(message.equalsIgnoreCase("Close")){
             close();
         }
     }
 
-    private void Train() {
+    private void initTrain() {
         try {
             POIS = (RealMatrix) in.readObject();
             lamda = in.readDouble();
             sol = POIS.getRowDimension();
             sor = POIS.getColumnDimension();
             double min = Double.MAX_VALUE, thres = 0, lamda = 0.01;
+            initUI();
             initMatrices();
             trainU();
             trainI();
-            out.writeObject(U);
-            out.writeObject(I);
+            out.writeObject(U.getData());
+            out.flush();
+            out.writeObject(I.getData());
+            out.flush();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        catch (ClassNotFoundException e){
+            e.printStackTrace();
+        }
+    }
+
+    private void train() {
+        try {
+            POIS = (RealMatrix) in.readObject();
+            Udata = (double[][]) in.readObject();
+            Idata = (double[][]) in.readObject();
+            lamda = in.readDouble();
+            U = MatrixUtils.createRealMatrix(Udata);
+            I = MatrixUtils.createRealMatrix(Idata);
+            sol = POIS.getRowDimension();
+            sor = POIS.getColumnDimension();
+            double min = Double.MAX_VALUE, thres = 0, lamda = 0.01;
+            initMatrices();
+            trainU();
+            trainI();
+            out.writeObject(U.getData());
+            out.flush();
+            out.writeObject(I.getData());
             out.flush();
         }
         catch (IOException e) {
@@ -99,13 +129,7 @@ public class Work extends Thread implements Serializable{
         }
     }
 
-    private void initMatrices() {
-        C = new OpenMapRealMatrix(sol, sor);
-        for(int i = 0; i < sol; i++){
-            for(int j = 0; j < sor; j++){
-                C.setEntry(i, j, 1 + 40*POIS.getEntry(i,j));
-            }
-        }
+    private void initUI(){
         soo = sol*sor;
         n = soo/(sol+sor);
         U = MatrixUtils.createRealMatrix(sol, n);
@@ -120,6 +144,17 @@ public class Work extends Thread implements Serializable{
         for(int i = 0; i < I.getRowDimension(); i++){
             for(int j = 0; j < I.getColumnDimension(); j++){
                 I.setEntry(i, j, (Math.floor(ran.nextFloat()*100)/100));
+            }
+        }
+        U = U.scalarAdd(0.01);
+        I = I.scalarAdd(0.01);
+    }
+
+    private void initMatrices() {
+        C = new OpenMapRealMatrix(sol, sor);
+        for(int i = 0; i < sol; i++){
+            for(int j = 0; j < sor; j++){
+                C.setEntry(i, j, 1 + 40*POIS.getEntry(i,j));
             }
         }
         or = new double[sol];
@@ -137,8 +172,6 @@ public class Work extends Thread implements Serializable{
         orm = MatrixUtils.createRealDiagonalMatrix(or);
         ocm = MatrixUtils.createRealDiagonalMatrix(oc);
         ncm = MatrixUtils.createRealDiagonalMatrix(nc);
-        U = U.scalarAdd(0.01);
-        I = I.scalarAdd(0.01);
     }
 
     private void trainU(){
@@ -159,7 +192,6 @@ public class Work extends Thread implements Serializable{
             FS = FS.transpose();
             FS = FS.preMultiply(C.getRowMatrix(i));
             U.setRowMatrix(i, FS);
-            System.out.println(i);
         }
     }
 
@@ -181,7 +213,6 @@ public class Work extends Thread implements Serializable{
             FS = FS.transpose();
             FS = FS.preMultiply(C.getColumnMatrix(i).transpose());
             I.setRowMatrix(i, FS);
-            System.out.println(i);
         }
     }
 }

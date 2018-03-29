@@ -1,6 +1,6 @@
 package main.cs;
 
-import org.apache.commons.math3.linear.OpenMapRealMatrix;
+import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
 
 import java.io.IOException;
@@ -18,7 +18,8 @@ public class Master extends Thread{
     private Socket req = null;
     private ObjectInputStream in = null;
     private ObjectOutputStream out = null;
-    private RealMatrix marix, U, I;
+    private RealMatrix matrix;
+    private double[][] U, I;
     private double lamda;
 
     Master(String ip, String message){
@@ -34,12 +35,30 @@ public class Master extends Thread{
         }
     }
 
-    Master(String ip, String message, RealMatrix matrix,int start, int finish, double lamda){
+    Master(String ip, String message, RealMatrix matrix, int start, int finish, double lamda){
         this.ip = ip;
         this.message = message;
-        this.marix = matrix;
+        this.matrix = matrix;
         this.start = start;
         this.finish = finish;
+        this.lamda = lamda;
+        try {
+            req = new Socket(ip, 4200);
+            out = new ObjectOutputStream(req.getOutputStream());
+            in = new ObjectInputStream(req.getInputStream());
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    Master(String ip, String message, int start,RealMatrix matrix, RealMatrix U, RealMatrix I, double lamda){
+        this.ip = ip;
+        this.message = message;
+        this.start = start;
+        this.matrix = matrix;
+        this.U = U.getData();
+        this.I = I.getData();
         this.lamda = lamda;
         try {
             req = new Socket(ip, 4200);
@@ -58,6 +77,9 @@ public class Master extends Thread{
                 if(message.equalsIgnoreCase("Stats")) {
                     getStats();
                 }
+                else if(message.equalsIgnoreCase("InitDist")){
+                    sendInitMatrices();
+                }
                 else if(message.equalsIgnoreCase("Dist")){
                     sendMatrices();
                 }
@@ -71,7 +93,6 @@ public class Master extends Thread{
             e.printStackTrace();
         }
     }
-
 
     private void getStats(){
         try {
@@ -89,16 +110,40 @@ public class Master extends Thread{
         }
     }
 
-    private void sendMatrices() {
+    private void sendInitMatrices() {
         try{
             out.writeObject(message);
-            System.out.println(message);
             out.flush();
-            out.writeObject(marix);
+            out.writeObject(matrix);
             out.writeDouble(lamda);
             out.flush();
-            U = (RealMatrix) in.readObject();
-            I = (RealMatrix) in.readObject();
+            U = (double[][]) in.readObject();
+            I = (double[][]) in.readObject();
+            //U = (Array2DRowRealMatrix) in.readObject();
+            //I = (Array2DRowRealMatrix) in.readObject();
+        }
+        catch (IOException e){
+            e.printStackTrace();
+        }
+        catch (ClassNotFoundException e){
+            e.printStackTrace();
+        }
+    }
+
+
+    private void sendMatrices() {
+        try {
+            out.writeObject(message);
+            out.flush();
+            out.writeObject(matrix);
+            out.writeObject(U);
+            out.writeObject(I);
+            out.writeDouble(lamda);
+            out.flush();
+            U = (double[][]) in.readObject();
+            I = (double[][]) in.readObject();
+            //U = (Array2DRowRealMatrix) in.readObject();
+            //I = (Array2DRowRealMatrix) in.readObject();
         }
         catch (IOException e){
             e.printStackTrace();
@@ -126,11 +171,11 @@ public class Master extends Thread{
         return ram;
     }
 
-    public RealMatrix getU(){
+    public double[][] getU(){
         return U;
     }
 
-    public RealMatrix getI(){
+    public double[][] getI(){
         return I;
     }
 
