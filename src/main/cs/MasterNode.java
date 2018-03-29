@@ -99,7 +99,7 @@ public class MasterNode {
                 min = getError();
                 thres = min - temp;
             }
-            if(thres < 0.005){
+            if(thres < 0.001){
                 break;
             }
         }
