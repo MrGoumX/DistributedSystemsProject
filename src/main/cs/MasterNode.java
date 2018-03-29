@@ -59,19 +59,18 @@ public class MasterNode {
         for(int i = 0; i < args.length; i++){
             sum += scores[i];
         }
-        int mo = sum/scores.length;
-        System.out.println(mo);
-        int s = POIS.getRowDimension()/mo;
-        for(int i = 0; i < 500; i++){
-            for(int j = 0; j < args.length; j++){
-                int rows = s*scores[j];
-                if (j == args.length-1 && rows!=POIS.getRowDimension()){
-                    rows = POIS.getRowDimension()-1;
-                }
-                System.out.println(rows);
-                conn[j] = new Master(args[j], "Dist", POIS.getSubMatrix(temp, rows, 0, POIS.getColumnDimension()-1),temp, rows, lamda);
-                temp = rows;
+        int fin = POIS.getRowDimension()/sum;
+        for(int j = 0; j < args.length; j++){
+            int rows = fin*scores[j];
+
+            if (j == args.length-1 && rows!=POIS.getRowDimension()){
+                rows = POIS.getRowDimension()-1;
             }
+            System.out.println(rows);
+            conn[j] = new Master(args[j], "Dist", POIS.getSubMatrix(temp, rows, 0, POIS.getColumnDimension()-1),temp, rows, lamda);
+            temp = rows;
+        }
+        for(int i = 0; i < 500; i++){
             for(Master k : conn){
                 k.start();
             }
@@ -82,9 +81,11 @@ public class MasterNode {
                 int s1 = conn[j].getStart();
                 double[][] Udata = conn[j].getU().getData();
                 double[][] Idata = conn[j].getI().getData();
+                System.out.println(j);
                 U.setSubMatrix(Udata, s1, 0);
                 I.setSubMatrix(Idata, s1, 0);
             }
+
             if(i > 0){
                 double temp = min;
                 min = getError();

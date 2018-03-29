@@ -70,7 +70,7 @@ public class Work extends Thread implements Serializable{
             trainI();
             out.writeObject(U);
             out.writeObject(I);
-
+            out.flush();
         }
         catch (IOException e) {
             e.printStackTrace();
@@ -78,7 +78,6 @@ public class Work extends Thread implements Serializable{
         catch (ClassNotFoundException e){
             e.printStackTrace();
         }
-
     }
 
     private void sendStats(){
