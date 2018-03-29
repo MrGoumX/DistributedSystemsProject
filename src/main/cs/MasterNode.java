@@ -59,16 +59,15 @@ public class MasterNode {
         for(int i = 0; i < args.length; i++){
             sum += scores[i];
         }
-        int mo = sum/scores.length;
-        int s = POIS.getRowDimension()/mo;
         soo = sol*sor;
         n = soo/(sol+sor);
+        int r = sol/sum;
         U = MatrixUtils.createRealMatrix(sol, n);
         I = MatrixUtils.createRealMatrix(sor, n);
         for(int i = 0; i < 500; i++){
             for(int j = 0; j < args.length; j++){
                 int temp3 = 0;
-                int rows = s*scores[j];
+                int rows = r*scores[j];
                 if (j == args.length-1 && rows!=POIS.getRowDimension()){
                     rows = POIS.getRowDimension()-1;
                 }
@@ -76,7 +75,7 @@ public class MasterNode {
                     conn[j] = new Master(args[j], "InitDist", POIS.getSubMatrix(temp3, rows, 0, POIS.getColumnDimension() - 1), temp3, rows, lamda);
                 }
                 else{
-                    conn[j] = new Master(args[j], "Dist", temp3, POIS.getSubMatrix(temp, rows, 0, POIS.getColumnDimension() - 1), U, I, lamda);
+                    conn[j] = new Master(args[j], "Dist", temp3, POIS.getSubMatrix(temp3, rows, 0, POIS.getColumnDimension() - 1), U, I, lamda);
                 }
                 temp3 = rows;
             }
