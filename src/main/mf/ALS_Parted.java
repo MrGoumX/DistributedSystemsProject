@@ -144,7 +144,7 @@ public class ALS_Parted {
         for(int i = 0; i < sol; i++){
             for(int j = 0; j < sor; j++){
                 double[][] temp = (I.getRowMatrix(i).multiply(U.getRowMatrix(i).transpose())).getData();
-                err += C.getEntry(i,j)*(pow((POIS.getEntry(i,j)-temp[0][0]),2));
+                err += C.getEntry(i,j)*(pow((Bin.getEntry(i,j)-temp[0][0]),2));
             }
         }
         err -= lamda*(I.getFrobeniusNorm() + U.getFrobeniusNorm());
@@ -152,17 +152,18 @@ public class ALS_Parted {
     }
 
     public int getRecommendation(int row, int col){
-        double[][] rec = I.getRowMatrix(row).transpose().multiply(U.getRowMatrix(col)).getData();
+        double[][] rec = U.transpose().getRowMatrix(row).multiply(I.getColumnMatrix(col)).getData();
+        System.out.println(rec.length);
         int temp = (int) Math.round(rec[0][0]);
         return temp;
     }
 
     public static void main(String[] args) throws IOException{
-        String file = "C:/Users/MrGoumX/Projects/DistributedSystemsProject/src/main/mf/Dataset1_WZ.csv";
+        String file = "C:/Users/MrGoumX/Projects/DistributedSystemsProject/src/main/cs/Test.csv";
         double min = Double.MAX_VALUE, thres = 0, lamda = 0.01;
         ALS_Parted ALS = new ALS_Parted(file, lamda);
         ALS.initMatrices();
-        for(int i = 0; i < 500; i++){
+        for(int i = 0; i < 100; i++){
             ALS.trainU();
             ALS.trainI();
             if(i > 0){
@@ -171,11 +172,11 @@ public class ALS_Parted {
                 thres = min - temp;
             }
             if(thres < 0.005){
-                break;
+                //break;
             }
             System.out.println("Trained with error " + thres);
         }
-        int rec = ALS.getRecommendation(528, 145);
+        int rec = ALS.getRecommendation(0, 0);
         System.out.println(rec);
     }
 }

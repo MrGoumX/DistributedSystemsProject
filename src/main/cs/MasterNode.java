@@ -65,8 +65,8 @@ public class MasterNode {
         U = MatrixUtils.createRealMatrix(sol, n);
         I = MatrixUtils.createRealMatrix(sor, n);
         for(int i = 0; i < 500; i++){
+            int temp3 = 0;
             for(int j = 0; j < args.length; j++){
-                int temp3 = 0;
                 int rows = r*scores[j];
                 if (j == args.length-1 && rows!=POIS.getRowDimension()){
                     rows = POIS.getRowDimension()-1;
@@ -137,10 +137,11 @@ public class MasterNode {
         }
     }
 
-    public int getRecommendation(int row, int col){
-        double[][] rec = I.getRowMatrix(row).transpose().multiply(U.getRowMatrix(col)).getData();
+    public double getRecommendation(int row, int col){
+        double[][] rec = U.transpose().getRowMatrix(row).multiply(I.getColumnMatrix(col)).getData();
+        double t = rec[0][0];
         //int temp = (int) Math.round(rec[0][0]);
-        return temp;
+        return t;
     }
 
     private double getError(){

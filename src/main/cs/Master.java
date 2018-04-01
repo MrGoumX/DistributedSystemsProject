@@ -1,6 +1,5 @@
 package main.cs;
 
-import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
 
 import java.io.IOException;

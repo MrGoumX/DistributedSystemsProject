@@ -212,6 +212,7 @@ public class Work extends Thread implements Serializable{
             FS = FS.multiply(temp);
             FS = FS.transpose();
             FS = FS.preMultiply(C.getColumnMatrix(i).transpose());
+            System.out.println(FS.getRowDimension() + "/" + FS.getColumnDimension());
             I.setRowMatrix(i, FS);
         }
     }
