@@ -13,6 +13,9 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 
 public class Worker extends Thread{
+    /**
+     * Variable Definition
+     */
     private Socket socket;
     private ObjectInputStream in;
     private ObjectOutputStream out;
@@ -29,6 +32,9 @@ public class Worker extends Thread{
     private double[] or, oc, nc, row, col;
     private double lamda, err = 0;
 
+    /**
+     * Constructors
+     */
     public Worker(String master){
         this.master = master;
         while(true) {
@@ -50,6 +56,9 @@ public class Worker extends Thread{
         }
     }
 
+    /**
+     * Starting method
+     */
     public synchronized void run(){
         while(true){
             try{
@@ -79,6 +88,9 @@ public class Worker extends Thread{
         }
     }
 
+    /**
+     * The method that manages the training of the matrices after 1st initialization
+     */
     private void train() {
         try {
             POIS = (RealMatrix) in.readObject();
@@ -106,6 +118,9 @@ public class Worker extends Thread{
         }
     }
 
+    /**
+     * The method that manages the 1st training of the matrices
+     */
     private void initTrain() {
         try {
             POIS = (RealMatrix) in.readObject();
@@ -130,6 +145,9 @@ public class Worker extends Thread{
         }
     }
 
+    /**
+     * The method that trains the Users matrix based on the POI matrix
+     */
     private void trainU(){
         IT = I.transpose();
         MI = IT.multiply(I);
@@ -153,6 +171,9 @@ public class Worker extends Thread{
 
     }
 
+    /**
+     * The method that trains the POI matrix based on the Users matrix
+     */
     private void trainI() {
         UT = U.transpose();
         MU = UT.multiply(U);
@@ -174,6 +195,9 @@ public class Worker extends Thread{
         }
     }
 
+    /**
+     * The method that initializes the matrices needed for ALS to work
+     */
     private void initMatrices() {
         C = new OpenMapRealMatrix(sol, sor);
         for(int i = 0; i < sol; i++){
@@ -198,6 +222,9 @@ public class Worker extends Thread{
         ncm = MatrixUtils.createRealDiagonalMatrix(nc);
     }
 
+    /**
+     * The method that is called once to initialize matrices U, I
+     */
     private void initUI() {
         soo = sol*sor;
         n = soo/(sol+sor);
@@ -219,6 +246,9 @@ public class Worker extends Thread{
         I = I.scalarAdd(0.01);
     }
 
+    /**
+     * Bind message with server
+     */
     private void init(){
         try{
             out.writeObject("Hello, I'm Worker");
@@ -229,6 +259,9 @@ public class Worker extends Thread{
         }
     }
 
+    /**
+     * Sends to master the pc specs
+     */
     private void sendStats(){
         try{
             out.writeObject(HWInfo.getInfo());
@@ -240,6 +273,9 @@ public class Worker extends Thread{
         }
     }
 
+    /**
+     * Main method
+     */
     public static void main(String[] args) {
         new Worker("127.0.0.1").start();
     }

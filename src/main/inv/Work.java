@@ -1,6 +1,5 @@
 package main.inv;
 
-import main.cs.HWInfo;
 import org.apache.commons.math3.linear.RealMatrix;
 
 import java.io.IOException;
@@ -10,6 +9,9 @@ import java.net.Socket;
 import java.util.ArrayList;
 
 public class Work extends Thread{
+    /**
+     * Variable Definition
+     */
     private Socket socket;
     private ObjectOutputStream out;
     private ObjectInputStream in;
@@ -19,6 +21,9 @@ public class Work extends Thread{
     private long ram;
     private double lamda;
 
+    /**
+     * Constructors
+     */
     public Work(Socket socket, ObjectOutputStream out, ObjectInputStream in){
         this.socket = socket;
         this.out = out;
@@ -55,6 +60,9 @@ public class Work extends Thread{
         this.lamda = lamda;
     }
 
+    /**
+     * Starting Method
+     */
     public synchronized void run(){
         if(message.equalsIgnoreCase("Stats")){
             getStats();
@@ -70,6 +78,9 @@ public class Work extends Thread{
         }
     }
 
+    /**
+     * Closes socket
+     */
     private void close() {
         try{
             out.close();
@@ -81,6 +92,9 @@ public class Work extends Thread{
         }
     }
 
+    /**
+     * Sends matrices to worker after first initialization
+     */
     private void sendMatrices() {
         try {
             out.writeObject(message);
@@ -101,6 +115,9 @@ public class Work extends Thread{
         }
     }
 
+    /**
+     * Sends matrices to worker for first initialization
+     */
     private void sendInitMatrices() {
         try {
             out.writeObject(message);
@@ -119,6 +136,9 @@ public class Work extends Thread{
         }
     }
 
+    /**
+     * Receives from worker the PC specs of him
+     */
     private void getStats(){
         try{
             out.writeObject(message);
@@ -135,38 +155,65 @@ public class Work extends Thread{
         }
     }
 
+    /**
+     * @return The worker connection
+     */
     public Socket getSocket() {
         return socket;
     }
 
+    /**
+     * @return The worker output stream
+     */
     public ObjectOutputStream getOut() {
         return out;
     }
 
+    /**
+     * @return The worker input stream
+     */
     public ObjectInputStream getIn() {
         return in;
     }
 
+    /**
+     * @return The worker's cores
+     */
     public int getCores() {
         return cores;
     }
 
+    /**
+     * @return The worker's ram in bytes
+     */
     public long getRam() {
         return ram;
     }
 
+    /**
+     * @return The matrix of users
+     */
     public double[][] getU() {
         return U.getData();
     }
 
+    /**
+     * @return The matrix of pois
+     */
     public double[][] getI() {
         return I.getData();
     }
 
+    /**
+     * @return The start of the original matrix (POIS)
+     */
     public int getStart(){
         return start;
     }
 
+    /**
+     * @return The finish of the original matrix (POIS)
+     */
     public int getFinish(){
         return finish;
     }

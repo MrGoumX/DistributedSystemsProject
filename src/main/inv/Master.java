@@ -13,6 +13,9 @@ import java.util.List;
 import static java.lang.StrictMath.pow;
 
 public class Master extends Thread {
+    /**
+     * Variable Definition
+     */
     private ServerSocket server;
     private Socket socket;
     private ObjectInputStream in;
@@ -31,6 +34,13 @@ public class Master extends Thread {
     private double err = 0, min = Double.MAX_VALUE, thres = 1, lamda, ferr;
     private String filename;
 
+    /**
+     * Constructor
+     * @param filename The CSV file to read the POIS matrix off
+     * @param iterations The number of iterations of training
+     * @param lamda The lambda for the training of the U and I
+     * @param ferr The final error needed for the training of U and I
+     */
     Master(String filename, int iterations, double lamda, double ferr){
         this.filename = filename;
         this.iterations = iterations;
@@ -38,11 +48,17 @@ public class Master extends Thread {
         this.ferr = ferr;
     }
 
+    /**
+     * Starting method
+     */
     public void run(){
         new Thread(()->initMatrices(filename)).start();
         new Thread(()->openServer()).start();
     }
 
+    /**
+     * The method that opens the server and differentiate the client from the worker
+     */
     private void openServer(){
         try{
             server = new ServerSocket(port);
@@ -69,6 +85,9 @@ public class Master extends Thread {
         }
     }
 
+    /**
+     * POIS matrix read off
+     */
     private void initMatrices(String filename){
         try {
             br = new BufferedReader(new FileReader(filename));
@@ -101,6 +120,9 @@ public class Master extends Thread {
         }
     }
 
+    /**
+     * The method that manages the communication and work between server and worker
+     */
     private void worker(){
         try {
             Work W = new Work(socket, out, in);
@@ -126,6 +148,9 @@ public class Master extends Thread {
         }
     }
 
+    /**
+     * The method that calculates how to distribute the matrices
+     */
     private void calcStarts() {
         for(int j = 0; j < connections.size(); j++) {
             int br = 0;
@@ -137,6 +162,9 @@ public class Master extends Thread {
         }
     }
 
+    /**
+     * Matrices distribution
+     */
     private void dist() {
         for(int i = 0; i < iterations; i++){
             int br = 0;
@@ -179,6 +207,12 @@ public class Master extends Thread {
         client();
     }
 
+    /**
+     * The method that produces the recommendation after training
+     * @param row the row needed
+     * @param col the column needed
+     * @return a score
+     */
     public double getRecommendation(int row, int col){
         double[][] rec = U.transpose().getRowMatrix(row).multiply(I.getColumnMatrix(col)).getData();
         System.out.println(rec.length);
@@ -186,6 +220,9 @@ public class Master extends Thread {
         return t;
     }
 
+    /**
+     * @return Error after every iteration of training
+     */
     private double getError(){
         for(int i = 0; i < sol; i++){
             for(int j = 0; j < sor; j++){
@@ -197,6 +234,9 @@ public class Master extends Thread {
         return err;
     }
 
+    /**
+     * Calculates the dimensions of U and I
+     */
     private void calcUI() {
         soo = sol*sor;
         n = soo/(sol+sor);
@@ -205,6 +245,9 @@ public class Master extends Thread {
 
     }
 
+    /**
+     * Calculates the distribution based on a scoring system
+     */
     private void calcDist() {
         for(int i = 0; i < connections.size(); i++){
             int score = 0;
@@ -220,6 +263,9 @@ public class Master extends Thread {
         r = sol/total;
     }
 
+    /**
+     * Client WIP
+     */
     private void client(){
         System.out.println(getRecommendation(0,0));
         System.out.println(getRecommendation(1,1));
@@ -228,6 +274,9 @@ public class Master extends Thread {
         System.out.println(getRecommendation(4,4));
     }
 
+    /**
+     * Main method
+     */
     public static void main(String[] args) {
         new Master("C:/Users/MrGoumX/Projects/DistributedSystemsProject/src/main/cs/Test.csv", 500, 0.01, 0.001).start();
     }
