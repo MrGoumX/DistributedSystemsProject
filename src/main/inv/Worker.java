@@ -97,6 +97,8 @@ public class Worker extends Thread{
             U = (RealMatrix) in.readObject();
             I = (RealMatrix) in.readObject();
             lamda = in.readDouble();
+            start = in.readInt();
+            finish = in.readInt();
             //U = MatrixUtils.createRealMatrix(Udata);
             //I = MatrixUtils.createRealMatrix(Idata);
             sol = POIS.getRowDimension();
@@ -125,12 +127,15 @@ public class Worker extends Thread{
         try {
             POIS = (RealMatrix) in.readObject();
             lamda = in.readDouble();
+            start = in.readInt();
+            finish = in.readInt();
             sol = POIS.getRowDimension();
             sor = POIS.getColumnDimension();
             double min = Double.MAX_VALUE, thres = 0, lamda = 0.01;
             initUI();
             initMatrices();
             trainU();
+            U = (RealMatrix) in.readObject();
             trainI();
             out.writeObject(U);
             out.flush();
@@ -151,7 +156,10 @@ public class Worker extends Thread{
     private void trainU(){
         IT = I.transpose();
         MI = IT.multiply(I);
-        for(int i = 0; i < sol; i ++) {
+        //System.out.println("Start: " + start);
+        //System.out.println("Finish: " + finish);
+        for(int i = start; i < finish; i++) {
+            //System.out.println(i);
             row = C.getRow(i);
             RealMatrix temp = MatrixUtils.createRealDiagonalMatrix(row);
             RealMatrix temp2 = temp.subtract(ocm);
@@ -165,12 +173,16 @@ public class Worker extends Thread{
             FS = FS.multiply(temp);
             FS = FS.transpose();
             FS = FS.preMultiply(Bin.getRowMatrix(i));
-            System.out.println(FS.getRowDimension() + "/" + FS.getColumnDimension());
             U.setRowMatrix(i, FS);
         }
-
+        try{
+            out.writeObject(U);
+            out.flush();
+        }
+        catch (IOException e){
+            e.printStackTrace();
+        }
     }
-
     /**
      * The method that trains the POI matrix based on the Users matrix
      */
@@ -178,6 +190,7 @@ public class Worker extends Thread{
         UT = U.transpose();
         MU = UT.multiply(U);
         for(int i = 0; i < sor; i++) {
+            System.out.println(i);
             col = C.getColumn(i);
             RealMatrix temp = MatrixUtils.createRealDiagonalMatrix(col);
             RealMatrix temp2 = temp.subtract(orm);
@@ -199,6 +212,8 @@ public class Worker extends Thread{
      * The method that initializes the matrices needed for ALS to work
      */
     private void initMatrices() {
+        //sol = U.getRowDimension();
+        //sor = POIS.getColumnDimension();
         Bin = new OpenMapRealMatrix(sol, sor);
         for (int i = 0; i < sol; i++) {
             for (int j = 0; j < sor; j++) {

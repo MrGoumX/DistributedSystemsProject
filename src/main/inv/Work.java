@@ -48,13 +48,14 @@ public class Work extends Thread{
         this.lamda = lamda;
     }
 
-    public Work(Socket socket, ObjectOutputStream out, ObjectInputStream in, String message, RealMatrix matrix, int start, RealMatrix U, RealMatrix I, double lamda){
+    public Work(Socket socket, ObjectOutputStream out, ObjectInputStream in, String message, RealMatrix matrix, int start, int finish, RealMatrix U, RealMatrix I, double lamda){
         this.socket = socket;
         this.out = out;
         this.in = in;
         this.message = message;
         this.matrix = matrix;
         this.start = start;
+        this.finish = finish;
         this.U = U;
         this.I = I;
         this.lamda = lamda;
@@ -103,7 +104,10 @@ public class Work extends Thread{
             out.writeObject(U);
             out.writeObject(I);
             out.writeDouble(lamda);
+            out.writeInt(start);
+            out.writeInt(finish);
             out.flush();
+
             U = (RealMatrix) in.readObject();
             I = (RealMatrix) in.readObject();
         }
@@ -124,6 +128,8 @@ public class Work extends Thread{
             out.flush();
             out.writeObject(matrix);
             out.writeDouble(lamda);
+            out.writeInt(start);
+            out.writeInt(finish);
             out.flush();
             U = (RealMatrix) in.readObject();
             I = (RealMatrix) in.readObject();
@@ -216,5 +222,13 @@ public class Work extends Thread{
      */
     public int getFinish(){
         return finish;
+    }
+
+    public RealMatrix getRU(){
+        return U;
+    }
+
+    public RealMatrix getRI() {
+        return I;
     }
 }

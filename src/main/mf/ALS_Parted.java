@@ -158,14 +158,16 @@ public class ALS_Parted {
                 int pos = 0;
                 for (int j = col; j < col + rec[i - row].length; j++) {
                     if (j < Bin.getColumnDimension()) {
-                        if (rec[i - row][j - col] >= max && Bin.getEntry(i, j) == 0 && !recom.contains(j)) {
+                        if (rec[i - row][j - col] >= max && Bin.getEntry(i, j) == 0) {
                             max = rec[i - row][j - col];
                             pos = j;
                         }
                     }
                 }
-                values.add(max);
-                recom.add(pos);
+                if(!recom.contains(pos)) {
+                    values.add(max);
+                    recom.add(pos);
+                }
             }
         }
         return recom;
@@ -180,11 +182,11 @@ public class ALS_Parted {
     }
 
     public static void main(String[] args) throws IOException{
-        String file = "C:/Users/MrGoumX/Projects/DistributedSystemsProject/src/main/cs/5x6.csv";
+        String file = "C:/Users/MrGoumX/Projects/DistributedSystemsProject/src/main/cs/Test.csv";
         double min = Double.MAX_VALUE, thres = 0, lamda = 0.01;
         ALS_Parted ALS = new ALS_Parted(file, lamda);
         ALS.initMatrices();
-        for(int i = 0; i < 100; i++){
+        for(int i = 0; i < 10; i++){
             ALS.trainU();
             ALS.trainI();
             if(i > 0){
