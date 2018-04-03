@@ -164,7 +164,7 @@ public class Worker extends Thread{
             FS = FS.multiply(IT);
             FS = FS.multiply(temp);
             FS = FS.transpose();
-            FS = FS.preMultiply(C.getRowMatrix(i));
+            FS = FS.preMultiply(Bin.getRowMatrix(i));
             System.out.println(FS.getRowDimension() + "/" + FS.getColumnDimension());
             U.setRowMatrix(i, FS);
         }
@@ -190,7 +190,7 @@ public class Worker extends Thread{
             FS = FS.multiply(UT);
             FS = FS.multiply(temp);
             FS = FS.transpose();
-            FS = FS.preMultiply(C.getColumnMatrix(i).transpose());
+            FS = FS.preMultiply(Bin.getColumnMatrix(i).transpose());
             I.setRowMatrix(i, FS);
         }
     }
@@ -199,6 +199,12 @@ public class Worker extends Thread{
      * The method that initializes the matrices needed for ALS to work
      */
     private void initMatrices() {
+        Bin = new OpenMapRealMatrix(sol, sor);
+        for (int i = 0; i < sol; i++) {
+            for (int j = 0; j < sor; j++) {
+                Bin.setEntry(i, j, (POIS.getEntry(i, j) > 0) ? 1 : 0);
+            }
+        }
         C = new OpenMapRealMatrix(sol, sor);
         for(int i = 0; i < sol; i++){
             for(int j = 0; j < sor; j++){
@@ -227,7 +233,7 @@ public class Worker extends Thread{
      */
     private void initUI() {
         soo = sol*sor;
-        n = soo/(sol+sor);
+        n = soo/(sol+sor)+1;
         U = MatrixUtils.createRealMatrix(sol, n);
         I = MatrixUtils.createRealMatrix(sor, n);
         ran = new JDKRandomGenerator();

@@ -1,5 +1,6 @@
 package main.inv;
 
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.OpenMapRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
@@ -33,7 +34,6 @@ public class Master extends Thread {
     private final String wi = "Hello, I'm Worker", ci = "Hello, I'm Client";
     private double err = 0, min = Double.MAX_VALUE, thres = 1, lamda, ferr;
     private String filename;
-
     /**
      * Constructor
      * @param filename The CSV file to read the POIS matrix off
@@ -211,13 +211,31 @@ public class Master extends Thread {
      * The method that produces the recommendation after training
      * @param row the row needed
      * @param col the column needed
-     * @return a score
+     * @return a list of pois
      */
-    public double getRecommendation(int row, int col){
-        double[][] rec = U.transpose().getRowMatrix(row).multiply(I.getColumnMatrix(col)).getData();
-        System.out.println(rec.length);
-        double t = rec[0][0];
-        return t;
+    public ArrayList<Integer> getRecommendation(int row, int col){
+        double[][] rec = U.getRowMatrix(row).transpose().multiply(I.getRowMatrix(col)).getData();
+        ArrayList<Double> values = new ArrayList<Double>();
+        ArrayList<Integer> recom = new ArrayList<Integer>();
+        for(int i = row; i < row+rec.length; i++){
+            if(i < Bin.getRowDimension()) {
+                double max = 0;
+                int pos = 0;
+                for (int j = col; j < col + rec[i - row].length; j++) {
+                    if (j < Bin.getColumnDimension()) {
+                        if (rec[i - row][j - col] >= max && Bin.getEntry(i, j) == 0) {
+                            max = rec[i - row][j - col];
+                            pos = j;
+                        }
+                    }
+                }
+                if(!recom.contains(pos)) {
+                    values.add(max);
+                    recom.add(pos);
+                }
+            }
+        }
+        return recom;
     }
 
     /**
@@ -239,7 +257,7 @@ public class Master extends Thread {
      */
     private void calcUI() {
         soo = sol*sor;
-        n = soo/(sol+sor);
+        n = soo/(sol+sor)+1;
         U = MatrixUtils.createRealMatrix(sol, n);
         I = MatrixUtils.createRealMatrix(sor, n);
 
@@ -267,17 +285,13 @@ public class Master extends Thread {
      * Client WIP
      */
     private void client(){
-        System.out.println(getRecommendation(0,0));
-        System.out.println(getRecommendation(1,1));
         System.out.println(getRecommendation(2,2));
-        System.out.println(getRecommendation(3,3));
-        System.out.println(getRecommendation(4,4));
     }
 
     /**
      * Main method
      */
     public static void main(String[] args) {
-        new Master("C:/Users/MrGoumX/Projects/DistributedSystemsProject/src/main/cs/Test.csv", 500, 0.01, 0.001).start();
+        new Master("C:/Users/MrGoumX/Projects/DistributedSystemsProject/src/main/cs/Test.csv", 200, 0.01, 0.001).start();
     }
 }

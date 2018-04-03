@@ -6,9 +6,7 @@ import org.apache.commons.math3.linear.QRDecomposition;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.random.JDKRandomGenerator;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -62,7 +60,8 @@ public class ALS_Parted {
             }
         }
         soo = sol*sor;
-        n = soo/(sol+sor);
+        //n = (sol < sor) ? sol : sor;
+        n = soo/(sol+sor) + 1;
         U = MatrixUtils.createRealMatrix(sol, n);
         I = MatrixUtils.createRealMatrix(sor, n);
         ran = new JDKRandomGenerator();
@@ -112,9 +111,8 @@ public class ALS_Parted {
             FS = FS.multiply(IT);
             FS = FS.multiply(temp);
             FS = FS.transpose();
-            FS = FS.preMultiply(C.getRowMatrix(i));
+            FS = FS.preMultiply(Bin.getRowMatrix(i));
             U.setRowMatrix(i, FS);
-            System.out.println(i);
         }
     }
 
@@ -134,9 +132,8 @@ public class ALS_Parted {
             FS = FS.multiply(UT);
             FS = FS.multiply(temp);
             FS = FS.transpose();
-            FS = FS.preMultiply(C.getColumnMatrix(i).transpose());
+            FS = FS.preMultiply(Bin.getColumnMatrix(i).transpose());
             I.setRowMatrix(i, FS);
-            System.out.println(i);
         }
     }
 
@@ -151,15 +148,39 @@ public class ALS_Parted {
         return err;
     }
 
-    public int getRecommendation(int row, int col){
-        double[][] rec = U.transpose().getRowMatrix(row).multiply(I.getColumnMatrix(col)).getData();
-        System.out.println(rec.length);
-        int temp = (int) Math.round(rec[0][0]);
-        return temp;
+    public ArrayList<Integer> getRecommendation(int row, int col){
+        double[][] rec = U.getRowMatrix(row).transpose().multiply(I.getRowMatrix(col)).getData();
+        ArrayList<Double> values = new ArrayList<Double>();
+        ArrayList<Integer> recom = new ArrayList<Integer>();
+        for(int i = row; i < row+rec.length; i++){
+            if(i < Bin.getRowDimension()) {
+                double max = 0;
+                int pos = 0;
+                for (int j = col; j < col + rec[i - row].length; j++) {
+                    if (j < Bin.getColumnDimension()) {
+                        if (rec[i - row][j - col] >= max && Bin.getEntry(i, j) == 0 && !recom.contains(j)) {
+                            max = rec[i - row][j - col];
+                            pos = j;
+                        }
+                    }
+                }
+                values.add(max);
+                recom.add(pos);
+            }
+        }
+        return recom;
+    }
+
+    public RealMatrix getU() {
+        return U;
+    }
+
+    public RealMatrix getI() {
+        return I;
     }
 
     public static void main(String[] args) throws IOException{
-        String file = "C:/Users/MrGoumX/Projects/DistributedSystemsProject/src/main/cs/Test2.csv";
+        String file = "C:/Users/MrGoumX/Projects/DistributedSystemsProject/src/main/cs/5x6.csv";
         double min = Double.MAX_VALUE, thres = 0, lamda = 0.01;
         ALS_Parted ALS = new ALS_Parted(file, lamda);
         ALS.initMatrices();
@@ -174,9 +195,10 @@ public class ALS_Parted {
             if(thres < 0.005){
                 //break;
             }
-            System.out.println("Trained with error " + thres);
+            //System.out.println("Trained with error " + thres);
+            //
         }
-        int rec = ALS.getRecommendation(0, 0);
-        System.out.println(rec);
+        ArrayList<Integer> rec = ALS.getRecommendation(2, 2);
+        System.out.println("Rec: " + rec);
     }
 }

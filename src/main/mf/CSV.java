@@ -16,13 +16,13 @@ public class CSV {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        for(int i = 0; i < 200; i++){
-            for(int j = 0; j < 200; j++){
+        for(int i = 0; i < 5; i++){
+            for(int j = 0; j < 6; j++){
                 int temp = ran.nextInt(10) & Integer.MAX_VALUE;
                 if(Math.random()<0.8){
                     temp = 0;
                 }
-                write.write(temp + (j==199 ? System.lineSeparator() : ";"));
+                write.write(temp + (j==5 ? System.lineSeparator() : ";"));
             }
         }
         write.close();
