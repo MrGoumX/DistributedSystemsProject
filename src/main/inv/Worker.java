@@ -94,11 +94,11 @@ public class Worker extends Thread{
     private void train() {
         try {
             POIS = (RealMatrix) in.readObject();
-            Udata = (double[][]) in.readObject();
-            Idata = (double[][]) in.readObject();
+            U = (RealMatrix) in.readObject();
+            I = (RealMatrix) in.readObject();
             lamda = in.readDouble();
-            U = MatrixUtils.createRealMatrix(Udata);
-            I = MatrixUtils.createRealMatrix(Idata);
+            //U = MatrixUtils.createRealMatrix(Udata);
+            //I = MatrixUtils.createRealMatrix(Idata);
             sol = POIS.getRowDimension();
             sor = POIS.getColumnDimension();
             double min = Double.MAX_VALUE, thres = 0, lamda = 0.01;

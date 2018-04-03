@@ -1,6 +1,5 @@
 package main.inv;
 
-import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.OpenMapRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
@@ -34,6 +33,7 @@ public class Master extends Thread {
     private final String wi = "Hello, I'm Worker", ci = "Hello, I'm Client";
     private double err = 0, min = Double.MAX_VALUE, thres = 1, lamda, ferr;
     private String filename;
+
     /**
      * Constructor
      * @param filename The CSV file to read the POIS matrix off
@@ -152,11 +152,13 @@ public class Master extends Thread {
      * The method that calculates how to distribute the matrices
      */
     private void calcStarts() {
+        int br = 0;
         for(int j = 0; j < connections.size(); j++) {
-            int br = 0;
-            int rows = r * scores.get(j);
+            int rows = br + r * scores.get(j);
+            starts.add(j, rows);
+            System.out.println(rows);
             if (j == connections.size() - 1 && rows != POIS.getRowDimension()) {
-                starts.add(POIS.getRowDimension() - 1);
+                starts.add(j, POIS.getRowDimension() - 1);
             }
             br = rows;
         }
@@ -170,11 +172,9 @@ public class Master extends Thread {
             int br = 0;
             for(int j = 0; j < connections.size(); j++){
                 if(j == 0) {
-                    //conn[j] = new main.cs.Master(args[j], "InitDist", POIS.getSubMatrix(temp3, rows, 0, POIS.getColumnDimension() - 1), temp3, rows, lamda);
                     connections.set(j, new Work(connections.get(j).getSocket(), connections.get(j).getOut(), connections.get(j).getIn(), "InitDist", POIS.getSubMatrix(br, starts.get(j), 0, POIS.getColumnDimension() - 1), br, starts.get(j), lamda));
                 }
                 else{
-                    //conn[j] = new main.cs.Master(args[j], "Dist", temp3, POIS.getSubMatrix(temp3, rows, 0, POIS.getColumnDimension() - 1), U, I, lamda);
                     connections.set(j, new Work(connections.get(j).getSocket(), connections.get(j).getOut(), connections.get(j).getIn(), "Dist", POIS.getSubMatrix(br, starts.get(j), 0, POIS.getColumnDimension() - 1), br, U, I, lamda));
                 }
             }
@@ -260,7 +260,6 @@ public class Master extends Thread {
         n = soo/(sol+sor)+1;
         U = MatrixUtils.createRealMatrix(sol, n);
         I = MatrixUtils.createRealMatrix(sor, n);
-
     }
 
     /**
@@ -269,9 +268,8 @@ public class Master extends Thread {
     private void calcDist() {
         for(int i = 0; i < connections.size(); i++){
             int score = 0;
-            System.out.println(connections.size());
-            score += connections.get(i).getRam()*1;
-            score += connections.get(i).getCores()/1073741824;
+            score += connections.get(i).getCores()*1;
+            score += connections.get(i).getRam()/1073741824;
             scores.add(score);
         }
         int total = 0;
@@ -279,6 +277,7 @@ public class Master extends Thread {
             total += i;
         }
         r = sol/total;
+        if(r == 0) r = 1;
     }
 
     /**
