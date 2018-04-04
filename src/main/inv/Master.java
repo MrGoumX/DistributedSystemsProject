@@ -23,10 +23,11 @@ public class Master extends Thread {
     private BufferedReader br;
     private ArrayList<Work> connections = new ArrayList<Work>();
     private ArrayList<Integer> scores = new ArrayList<Integer>();
-    private ArrayList<Integer> starts = new ArrayList<Integer>();
+    private ArrayList<Integer> rowsf = new ArrayList<Integer>();
+    private ArrayList<Integer> colsf = new ArrayList<Integer>();
     private List<String[]> lines = new ArrayList<String[]>();
     private OpenMapRealMatrix POIS, C, Bin;
-    private int sol, sor, soo, n, temp, r, iterations;
+    private int sol, sor, soo, n, temp, rr, rc, iterations;
     private RealMatrix U, I;
     private final int port = 4200;
     private String diff, line, del = ";";
@@ -53,7 +54,8 @@ public class Master extends Thread {
      */
     public void run(){
         new Thread(()->initMatrices(filename)).start();
-        new Thread(()->openServer()).start();
+        //new Thread(()->openServer()).start();
+        openServer();
     }
 
     /**
@@ -130,7 +132,8 @@ public class Master extends Thread {
             W.start();
             W.join();
             for(int i = 0; i < connections.size(); i++){
-                connections.set(i, new Work(connections.get(i).getSocket(), connections.get(i).getOut(), connections.get(i).getIn(), "Stats"));
+                Work T = new Work(connections.get(i).getSocket(), connections.get(i).getOut(), connections.get(i).getIn(), "Stats");
+                connections.set(i, T);
             }
             for(Work i : connections){
                 i.start();
@@ -153,15 +156,24 @@ public class Master extends Thread {
      */
     private void calcStarts() {
         int t = 0;
+        int t1 = 0;
         for(int j = 0; j < connections.size(); j++) {
-            int rows = t + r * scores.get(j);
+            int rows = t + rr * scores.get(j);
+            int cols = t1 + rc * scores.get(j);
             if(j != connections.size()-1){
-                starts.add(j, rows);
+                rowsf.add(j, rows);
+                colsf.add(j, cols);
             }
-            if(j == connections.size() - 1 && rows != POIS.getRowDimension()) {
-                starts.add(j, POIS.getRowDimension());
+            else{
+                if(rows != POIS.getRowDimension()){
+                    rowsf.add(j, POIS.getRowDimension());
+                }
+                if(cols != POIS.getColumnDimension()){
+                    colsf.add(j, POIS.getColumnDimension());
+                }
             }
             t = rows;
+            t1 = cols;
         }
     }
 
@@ -171,26 +183,28 @@ public class Master extends Thread {
     private void dist() {
         for(int i = 0; i < iterations; i++){
             int br = 0;
+            int bc = 0;
+            System.out.println(connections.size());
             for(int j = 0; j < connections.size(); j++){
                 //TODO: WHAT IS WRONG: FOR EACH ITERATION DIFFERENT CONSTRUCTOR FOR TRAINING U AND I BECAUSE IN ORDER TO UPDATE I WE NEED TO HAVE UPDATED U. ALSO BREAKS UP THE WORK
                 if(i == 0) {
                     //connections.set(j, new Work(connections.get(j).getSocket(), connections.get(j).getOut(), connections.get(j).getIn(), "InitDist", POIS.getSubMatrix(br, starts.get(j), 0, POIS.getColumnDimension()-1), br, starts.get(j), lamda));
-                    connections.set(j, new Work(connections.get(j).getSocket(), connections.get(j).getOut(), connections.get(j).getIn(), "InitDist", POIS, br, starts.get(j), lamda));
+                    connections.set(j, new Work(connections.get(j).getSocket(), connections.get(j).getOut(), connections.get(j).getIn(), "InitDist", POIS, br, rowsf.get(j), bc, colsf.get(j), lamda));
+                    System.out.println(colsf.get(j));
+                    startWork();
                 }
                 else{
                     //connections.set(j, new Work(connections.get(j).getSocket(), connections.get(j).getOut(), connections.get(j).getIn(), "Dist", POIS.getSubMatrix(br, starts.get(j), 0, POIS.getColumnDimension() - 1), br, starts.get(j), U.getSubMatrix(br, starts.get(j), 0, U.getColumnDimension() - 1), I.getSubMatrix(br, starts.get(j), 0, I.getColumnDimension() - 1), lamda));
-                    connections.set(j, new Work(connections.get(j).getSocket(), connections.get(j).getOut(), connections.get(j).getIn(), "Dist", POIS, br, starts.get(j), U, I, lamda));
+                    //connections.set(j, new Work(connections.get(j).getSocket(), connections.get(j).getOut(), connections.get(j).getIn(), "Dist", POIS, br, rowsf.get(j), U, I, lamda));
+                    connections.set(j, new Work(connections.get(j).getSocket(), connections.get(j).getOut(), connections.get(j).getIn(), "TrainU", POIS, br, rowsf.get(j), U, I, lamda));
+                    startWork();
+                    connections.set(j, new Work(connections.get(j).getSocket(), connections.get(j).getOut(), connections.get(j).getIn(), "TrainI", POIS, bc, colsf.get(j), U, I, lamda));
+                    startWork();
                 }
-                br = starts.get(j);
+                br = rowsf.get(j);
+                bc = colsf.get(j);
             }
-            for(Work w : connections){
-                w.start();
-                try {
-                    w.join();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
+
             RealMatrix UT = MatrixUtils.createRealMatrix(sol, n);
             RealMatrix IT = MatrixUtils.createRealMatrix(sor, n);
             for(int j = 0; j < connections.size(); j++){
@@ -286,8 +300,24 @@ public class Master extends Thread {
         for(Integer i : scores){
             total += i;
         }
-        r = sol/total;
-        if(r == 0) r = 1;
+        rr = sol/total;
+        rc = sor/total;
+        if(rr == 0) rr = 1;
+        if(rc == 0) rc = 1;
+    }
+
+    private void startWork(){
+        try {
+            for (Work w : connections) {
+                w.start();
+            }
+            for (Work w : connections) {
+                w.join();
+            }
+        }
+        catch (InterruptedException e){
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -301,6 +331,6 @@ public class Master extends Thread {
      * Main method
      */
     public static void main(String[] args) {
-        new Master("C:/Users/MrGoumX/Projects/DistributedSystemsProject/src/main/cs/Test.csv", 10, 0.01, 0.001).start();
+        new Master("C:/Users/Desktop/IdeaProjects/DistributedSystemsProject/src/main/cs/Test.csv", 2, 0.01, 0.001).start();
     }
 }

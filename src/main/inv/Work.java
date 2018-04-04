@@ -17,7 +17,7 @@ public class Work extends Thread{
     private ObjectInputStream in;
     private String message = "";
     private RealMatrix matrix, U, I;
-    private int cores, start, finish;
+    private int cores, start, finish, startI, finishI;
     private long ram;
     private double lamda;
 
@@ -37,7 +37,7 @@ public class Work extends Thread{
         this.message = message;
     }
 
-    public Work(Socket socket, ObjectOutputStream out, ObjectInputStream in, String message, RealMatrix matrix, int start, int finish, double lamda){
+    public Work(Socket socket, ObjectOutputStream out, ObjectInputStream in, String message, RealMatrix matrix, int start, int finish, int startI, int finistI, double lamda){
         this.socket = socket;
         this.out = out;
         this.in = in;
@@ -45,6 +45,8 @@ public class Work extends Thread{
         this.matrix = matrix;
         this.start = start;
         this.finish = finish;
+        this.startI = startI;
+        this.finishI = finistI;
         this.lamda = lamda;
     }
 
@@ -71,7 +73,7 @@ public class Work extends Thread{
         else if(message.equalsIgnoreCase("InitDist")){
             sendInitMatrices();
         }
-        else if(message.equalsIgnoreCase("Dist")){
+        else if(message.equalsIgnoreCase("TrainU") || message.equalsIgnoreCase("TrainI")){
             sendMatrices();
         }
         else if(message.equalsIgnoreCase("Close")){
@@ -107,9 +109,12 @@ public class Work extends Thread{
             out.writeInt(start);
             out.writeInt(finish);
             out.flush();
-
-            U = (RealMatrix) in.readObject();
-            I = (RealMatrix) in.readObject();
+            if(message.equalsIgnoreCase("TrainU")){
+                U = (RealMatrix) in.readObject();
+            }
+            else if(message.equalsIgnoreCase("TrainI")){
+                I = (RealMatrix) in.readObject();
+            }
         }
         catch (IOException e){
             e.printStackTrace();
@@ -130,6 +135,8 @@ public class Work extends Thread{
             out.writeDouble(lamda);
             out.writeInt(start);
             out.writeInt(finish);
+            out.writeInt(startI);
+            out.writeInt(finishI);
             out.flush();
             U = (RealMatrix) in.readObject();
             I = (RealMatrix) in.readObject();

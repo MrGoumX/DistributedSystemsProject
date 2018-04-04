@@ -23,7 +23,7 @@ public class Worker extends Thread{
     private String message, master;
     private final String mi = "Hello, I'm Master";
     private boolean ctm = false;
-    private int sol, sor, soo, n, start, finish;
+    private int sol, sor, soo, n, start, finish, startI, finishI;
     private RealMatrix POIS;
     private OpenMapRealMatrix Bin, C;
     private RealMatrix U, I, orm, ocm, ncm, UT, IT, MI, FS, MU;
@@ -82,7 +82,7 @@ public class Worker extends Thread{
             else if(ctm && message.equalsIgnoreCase("InitDist")){
                 initTrain();
             }
-            else if(ctm && message.equalsIgnoreCase("Dist")){
+            else if(ctm && (message.equalsIgnoreCase("TrainU") || message.equalsIgnoreCase("TrainI"))){
                 train();
             }
         }
@@ -105,12 +105,16 @@ public class Worker extends Thread{
             sor = POIS.getColumnDimension();
             double min = Double.MAX_VALUE, thres = 0, lamda = 0.01;
             initMatrices();
-            trainU();
-            trainI();
-            out.writeObject(U);
-            out.flush();
-            out.writeObject(I);
-            out.flush();
+            if(message.equalsIgnoreCase("TrainU")){
+                trainU();
+                out.writeObject(U);
+                out.flush();
+            }
+            else if(message.equalsIgnoreCase("TrainI")){
+                trainI();
+                out.writeObject(I);
+                out.flush();
+            }
         }
         catch (IOException e){
             e.printStackTrace();
@@ -129,13 +133,16 @@ public class Worker extends Thread{
             lamda = in.readDouble();
             start = in.readInt();
             finish = in.readInt();
+            startI = in.readInt();
+            finishI = in.readInt();
             sol = POIS.getRowDimension();
             sor = POIS.getColumnDimension();
             double min = Double.MAX_VALUE, thres = 0, lamda = 0.01;
             initUI();
             initMatrices();
             trainU();
-            U = (RealMatrix) in.readObject();
+            start = startI;
+            finish = finishI;
             trainI();
             out.writeObject(U);
             out.flush();
@@ -156,10 +163,9 @@ public class Worker extends Thread{
     private void trainU(){
         IT = I.transpose();
         MI = IT.multiply(I);
-        //System.out.println("Start: " + start);
-        //System.out.println("Finish: " + finish);
+        System.out.println("Rows: ");
         for(int i = start; i < finish; i++) {
-            //System.out.println(i);
+            System.out.println(i);
             row = C.getRow(i);
             RealMatrix temp = MatrixUtils.createRealDiagonalMatrix(row);
             RealMatrix temp2 = temp.subtract(ocm);
@@ -175,13 +181,6 @@ public class Worker extends Thread{
             FS = FS.preMultiply(Bin.getRowMatrix(i));
             U.setRowMatrix(i, FS);
         }
-        try{
-            out.writeObject(U);
-            out.flush();
-        }
-        catch (IOException e){
-            e.printStackTrace();
-        }
     }
     /**
      * The method that trains the POI matrix based on the Users matrix
@@ -189,7 +188,8 @@ public class Worker extends Thread{
     private void trainI() {
         UT = U.transpose();
         MU = UT.multiply(U);
-        for(int i = 0; i < sor; i++) {
+        System.out.println("Columns: ");
+        for(int i = start; i < finish; i++) {
             System.out.println(i);
             col = C.getColumn(i);
             RealMatrix temp = MatrixUtils.createRealDiagonalMatrix(col);

@@ -182,11 +182,11 @@ public class ALS_Parted {
     }
 
     public static void main(String[] args) throws IOException{
-        String file = "C:/Users/MrGoumX/Projects/DistributedSystemsProject/src/main/cs/Test.csv";
+        String file = "C:/Users/Desktop/IdeaProjects/DistributedSystemsProject/src/main/cs/Test.csv";
         double min = Double.MAX_VALUE, thres = 0, lamda = 0.01;
         ALS_Parted ALS = new ALS_Parted(file, lamda);
         ALS.initMatrices();
-        for(int i = 0; i < 10; i++){
+        for(int i = 0; i < 2; i++){
             ALS.trainU();
             ALS.trainI();
             if(i > 0){
