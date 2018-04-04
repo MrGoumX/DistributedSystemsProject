@@ -190,21 +190,40 @@ public class Master extends Thread {
                 if(i == 0) {
                     //connections.set(j, new Work(connections.get(j).getSocket(), connections.get(j).getOut(), connections.get(j).getIn(), "InitDist", POIS.getSubMatrix(br, starts.get(j), 0, POIS.getColumnDimension()-1), br, starts.get(j), lamda));
                     connections.set(j, new Work(connections.get(j).getSocket(), connections.get(j).getOut(), connections.get(j).getIn(), "InitDist", POIS, br, rowsf.get(j), bc, colsf.get(j), lamda));
-                    System.out.println(colsf.get(j));
-                    startWork();
+                    connections.get(j).start();
+                    try{
+                        connections.get(j).join();
+                    }
+                    catch (InterruptedException e){
+                        e.printStackTrace();
+                    }
+                    //startWork(connections.get(j));
                 }
                 else{
                     //connections.set(j, new Work(connections.get(j).getSocket(), connections.get(j).getOut(), connections.get(j).getIn(), "Dist", POIS.getSubMatrix(br, starts.get(j), 0, POIS.getColumnDimension() - 1), br, starts.get(j), U.getSubMatrix(br, starts.get(j), 0, U.getColumnDimension() - 1), I.getSubMatrix(br, starts.get(j), 0, I.getColumnDimension() - 1), lamda));
                     //connections.set(j, new Work(connections.get(j).getSocket(), connections.get(j).getOut(), connections.get(j).getIn(), "Dist", POIS, br, rowsf.get(j), U, I, lamda));
                     connections.set(j, new Work(connections.get(j).getSocket(), connections.get(j).getOut(), connections.get(j).getIn(), "TrainU", POIS, br, rowsf.get(j), U, I, lamda));
-                    startWork();
+                    connections.get(j).start();
+                    try{
+                        connections.get(j).join();
+                    }
+                    catch (InterruptedException e){
+                        e.printStackTrace();
+                    }
+                    //startWork(connections.get(j));
                     connections.set(j, new Work(connections.get(j).getSocket(), connections.get(j).getOut(), connections.get(j).getIn(), "TrainI", POIS, bc, colsf.get(j), U, I, lamda));
-                    startWork();
+                    connections.get(j).start();
+                    try{
+                        connections.get(j).join();
+                    }
+                    catch (InterruptedException e){
+                        e.printStackTrace();
+                    }
+                    //startWork(connections.get(j));
                 }
                 br = rowsf.get(j);
                 bc = colsf.get(j);
             }
-
             RealMatrix UT = MatrixUtils.createRealMatrix(sol, n);
             RealMatrix IT = MatrixUtils.createRealMatrix(sor, n);
             for(int j = 0; j < connections.size(); j++){
@@ -292,7 +311,7 @@ public class Master extends Thread {
     private void calcDist() {
         for(int i = 0; i < connections.size(); i++){
             int score = 0;
-            score += connections.get(i).getCores()*1;
+            score += connections.get(i).getCores()*2;
             score += connections.get(i).getRam()/1073741824;
             scores.add(i, score);
         }
@@ -306,14 +325,10 @@ public class Master extends Thread {
         if(rc == 0) rc = 1;
     }
 
-    private void startWork(){
+    private void startWork(Work i){
         try {
-            for (Work w : connections) {
-                w.start();
-            }
-            for (Work w : connections) {
-                w.join();
-            }
+            i.start();
+            i.join();
         }
         catch (InterruptedException e){
             e.printStackTrace();
