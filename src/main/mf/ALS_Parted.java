@@ -13,72 +13,92 @@ import java.util.List;
 import static java.lang.StrictMath.pow;
 
 public class ALS_Parted {
-    private String file;
-    private List<String[]> lines = new ArrayList<String[]>();
-    private String line, del = ";";
-    private BufferedReader br = null;
-    private int sol, sor, soo, n;
-    private OpenMapRealMatrix POIS, Bin, C;
-    private RealMatrix U, I, orm, ocm, ncm, UT, IT, MI, FS, MU;
-    private JDKRandomGenerator ran = null;
-    private double[] or, oc, nc, row, col;
-    private double lamda, err = 0;
 
+    private BufferedReader br = null;
+
+    // sor = number of values of first csv's line = number of columns = number of points.
+    // sol = number of csv file lines = number of rows = number of users.
+    private int sol, sor;
+
+    // C matrix contains a score for each point.
+    // Bin matrix contains 1 if a user has gone to a point, 0 otherwise.
+    private OpenMapRealMatrix Bin, C;
+
+    // orm, ocm, ncm are diagonal matrices with 1 value at diagonal.
+    // U, I are User and Items(POIS) matrices.
+    // FS is a temporary matrix for training U and I.
+    private RealMatrix U, I, orm, ocm, ncm, FS;
+
+    private double lamda, err = 0; // lamda = λ factor.
+
+    // Constructor
+    // file is the .csv file which contains users's check-in.
     ALS_Parted(String file, double lamda){
-        this.file = file;
         this.lamda = lamda;
         try{
-            br = new BufferedReader(new FileReader(file));
+            br = new BufferedReader(new FileReader(file)); // initialize br to read from csv file.
         }
         catch (IOException e){
             e.printStackTrace();
         }
     }
 
+    // initMatrices() initializes all matrices.
     private void initMatrices() throws IOException{
+        List<String[]> lines = new ArrayList<>(); // lines is a list of arrays. Each String array contains csv values for one line.
+        String line; // line is temporary help variable.
         while((line = br.readLine()) != null) {
-            lines.add(line.split(del));
+            lines.add(line.split(";"));
         }
         sol = lines.size();
         sor = lines.get(0).length;
-        POIS = new OpenMapRealMatrix(sol, sor);
+
+        // create and initialize a POIS matrix, which contains csv elements of each point of interest.
+        OpenMapRealMatrix POIS = new OpenMapRealMatrix(sol, sor);
         for(int i = 0; i < sol; i++) {
             for (int j = 0; j < sor; j++) {
                 POIS.setEntry(i, j, Integer.parseInt(lines.get(i)[j]));
             }
         }
+
+        // create and initialize a Bin matrix.
         Bin = new OpenMapRealMatrix(sol, sor);
         for(int i = 0; i < sol; i++){
             for(int j = 0; j < sor; j++){
                 Bin.setEntry(i, j, (POIS.getEntry(i,j) > 0) ? 1 : 0);
             }
         }
+
+        // create and initialize a C matrix.
         C = new OpenMapRealMatrix(sol, sor);
         for(int i = 0; i < sol; i++){
             for(int j = 0; j < sor; j++){
                 C.setEntry(i, j, 1 + 40*POIS.getEntry(i,j));
             }
         }
-        soo = sol*sor;
-        //n = (sol < sor) ? sol : sor;
-        n = soo/(sol+sor) + 1;
-        U = MatrixUtils.createRealMatrix(sol, n);
-        I = MatrixUtils.createRealMatrix(sor, n);
-        ran = new JDKRandomGenerator();
+
+        // create and initialize U, I matrices with random values.
+        int k = (sol*sor)/(sol+sor) + 1; // calculation of k factor, which used as dimension to U and I matrices to reduce total size of POIS.
+        U = MatrixUtils.createRealMatrix(sol, k);
+        I = MatrixUtils.createRealMatrix(sor, k);
+        JDKRandomGenerator ran = new JDKRandomGenerator();
         ran.setSeed(1);
         for(int i = 0; i < U.getRowDimension(); i++){
             for(int j = 0; j < U.getColumnDimension(); j++){
                 U.setEntry(i, j, (Math.floor(ran.nextFloat()*100)/100));
             }
         }
+
         for(int i = 0; i < I.getRowDimension(); i++){
             for(int j = 0; j < I.getColumnDimension(); j++){
                 I.setEntry(i, j, (Math.floor(ran.nextFloat()*100)/100));
             }
         }
-        or = new double[sol];
-        oc = new double[sor];
-        nc = new double[n];
+
+        // create 3 doubles arrays, with sizes equals to number of users, point and n and initialize them with value 1.
+        double[] or = new double[sol];
+        double[] oc = new double[sor];
+        double[] nc = new double[k];
         for(int i = 0; i < or.length; i++){
             or[i] = 1;
         }
@@ -88,25 +108,26 @@ public class ALS_Parted {
         for(int i = 0; i < nc.length; i++){
             nc[i] = 1;
         }
+
+        // creation of 3 diagonal matrices with value 1 at diagonal.
         orm = MatrixUtils.createRealDiagonalMatrix(or);
         ocm = MatrixUtils.createRealDiagonalMatrix(oc);
         ncm = MatrixUtils.createRealDiagonalMatrix(nc);
+
+        // add 0.01 to each element(with random value) of U and I, so don't contain zero elements any more.
         U = U.scalarAdd(0.01);
         I = I.scalarAdd(0.01);
     }
 
     private void trainU(){
-        IT = I.transpose();
-        MI = IT.multiply(I);
+        RealMatrix IT = I.transpose();
         for(int i = 0; i < sol; i ++) {
-            row = C.getRow(i);
+            double[] row = C.getRow(i);
             RealMatrix temp = MatrixUtils.createRealDiagonalMatrix(row);
-            RealMatrix temp2 = temp.subtract(ocm);
-            FS = IT.multiply(temp2);
+            FS = IT.multiply(temp.subtract(ocm));
             FS = FS.multiply(I);
-            FS = FS.add(MI);
-            RealMatrix temp3 = ncm.scalarMultiply(lamda);
-            FS = FS.add(temp3);
+            FS = FS.add(IT.multiply(I));
+            FS = FS.add(ncm.scalarMultiply(lamda));
             FS = new QRDecomposition(FS).getSolver().getInverse();
             FS = FS.multiply(IT);
             FS = FS.multiply(temp);
@@ -117,17 +138,14 @@ public class ALS_Parted {
     }
 
     private void trainI(){
-        UT = U.transpose();
-        MU = UT.multiply(U);
+        RealMatrix UT = U.transpose();
         for(int i = 0; i < sor; i++) {
-            col = C.getColumn(i);
+            double[] col = C.getColumn(i);
             RealMatrix temp = MatrixUtils.createRealDiagonalMatrix(col);
-            RealMatrix temp2 = temp.subtract(orm);
-            FS = UT.multiply(temp2);
+            FS = UT.multiply(temp.subtract(orm));
             FS = FS.multiply(U);
-            FS = FS.add(MU);
-            RealMatrix temp3 = ncm.scalarMultiply(lamda);
-            FS = FS.add(temp3);
+            FS = FS.add(UT.multiply(U));
+            FS = FS.add(ncm.scalarMultiply(lamda));
             FS = new QRDecomposition(FS).getSolver().getInverse();
             FS = FS.multiply(UT);
             FS = FS.multiply(temp);
@@ -148,10 +166,13 @@ public class ALS_Parted {
         return err;
     }
 
+    // getRecommendation() returns recommendation as an array of integer, which represent number of column of POIS.
+    // row and col are the user position (if suppose that user is at a POI)
     public ArrayList<Integer> getRecommendation(int row, int col){
+
         double[][] rec = U.getRowMatrix(row).transpose().multiply(I.getRowMatrix(col)).getData();
-        ArrayList<Double> values = new ArrayList<Double>();
-        ArrayList<Integer> recom = new ArrayList<Integer>();
+        ArrayList<Double> values = new ArrayList<>();
+        ArrayList<Integer> recom = new ArrayList<>();
         for(int i = row; i < row+rec.length; i++){
             if(i < Bin.getRowDimension()) {
                 double max = 0;
@@ -173,32 +194,28 @@ public class ALS_Parted {
         return recom;
     }
 
-    public RealMatrix getU() {
-        return U;
-    }
-
-    public RealMatrix getI() {
-        return I;
-    }
-
     public static void main(String[] args) throws IOException{
-        String file = "C:/Users/Desktop/IdeaProjects/DistributedSystemsProject/src/main/cs/Test.csv";
-        double min = Double.MAX_VALUE, thres = 0, lamda = 0.01;
+
+        String file = "C:/Users/Konstantinos/IdeaProjects/DistributedSystemsProject/src/main/cs/Test.csv";
+        double thres = 0.005, lamda = 0.01;
         ALS_Parted ALS = new ALS_Parted(file, lamda);
         ALS.initMatrices();
-        for(int i = 0; i < 2; i++){
+
+        // first iteration.
+        ALS.trainU();
+        ALS.trainI();
+        double prevError, currentError = ALS.getError();
+
+        // rest iterations.
+        // foor loop stops when complete all iterations or the difference of error of 2 iterations become less than 0.005.
+        for(int i = 1; i < 2; i++){
             ALS.trainU();
             ALS.trainI();
-            if(i > 0){
-                double temp = min;
-                min = ALS.getError();
-                thres = min - temp;
+            prevError = currentError;
+            currentError = ALS.getError();
+            if( prevError-currentError < thres){
+                break;
             }
-            if(thres < 0.005){
-                //break;
-            }
-            //System.out.println("Trained with error " + thres);
-            //
         }
         ArrayList<Integer> rec = ALS.getRecommendation(2, 2);
         System.out.println("Rec: " + rec);

@@ -1,3 +1,7 @@
+/*
+* HWInfo retruns information such as RAM and CPU about each worker. This class used by worker sendStats() method.
+* */
+
 package main.cs;
 
 import java.lang.management.ManagementFactory;

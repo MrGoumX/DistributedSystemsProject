@@ -1,3 +1,6 @@
+/*
+* CSV class create random Test.csv files with random values, which represent POIS array for testing purposes.*/
+
 package main.mf;
 
 import org.apache.commons.math3.random.JDKRandomGenerator;
@@ -10,7 +13,7 @@ public class CSV {
     public static void main(String[] args) throws IOException{
         BufferedWriter write = null;
         JDKRandomGenerator ran = new JDKRandomGenerator();
-        //ran.setSeed(100);
+
         try {
             write = new BufferedWriter(new FileWriter("Test.csv"));
         } catch (IOException e) {
@@ -22,7 +25,7 @@ public class CSV {
                 if(Math.random()<0.8){
                     temp = 0;
                 }
-                write.write(temp + (j==5 ? System.lineSeparator() : ";"));
+                write.write(temp + (j == 5 ? System.lineSeparator() : ";"));
             }
         }
         write.close();
