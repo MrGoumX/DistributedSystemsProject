@@ -158,6 +158,7 @@ public class Worker extends Thread{
      * The method that is called once to initialize matrices U, I fot first time.
      */
     private void initUI() {
+
         k = (sol*sor)/(sol+sor)+1;
         U = MatrixUtils.createRealMatrix(sol, k);
         I = MatrixUtils.createRealMatrix(sor, k);
@@ -206,6 +207,7 @@ public class Worker extends Thread{
         double[] or = new double[sol];
         double[] oc = new double[sor];
         double[] nc = new double[k];
+
         for(int i = 0; i < or.length; i++){
             or[i] = 1;
         }

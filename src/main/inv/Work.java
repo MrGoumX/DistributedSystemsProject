@@ -21,6 +21,8 @@ public class Work extends Thread{
     private ObjectOutputStream out;
     private ObjectInputStream in;
 
+    private boolean isInitializedUI = false;
+
     // message is a command(or an order) from master to worker.
     private String message = "";
 
@@ -84,6 +86,7 @@ public class Work extends Thread{
         }
         else if(message.equalsIgnoreCase("InitDist")){ // "InitDist" message represents only the first time training.
             sendInitMatrices();
+            isInitializedUI = true;
         }
         else if(message.equalsIgnoreCase("TrainU") || message.equalsIgnoreCase("TrainI")){
             sendMatrices();
@@ -139,17 +142,17 @@ public class Work extends Thread{
             out.writeObject(message);
             out.flush();
             out.writeObject(POIS);
-            out.writeObject(U);
+            out.writeObject(U); // U and I contains value of first training within sendInitMatrices().
             out.writeObject(I);
             out.writeDouble(lamda);
             out.writeInt(start);
             out.writeInt(finish);
             out.flush();
             if(message.equalsIgnoreCase("TrainU")){
-                U = (RealMatrix) in.readObject();
+                U = (RealMatrix) in.readObject(); // update U.
             }
             else if(message.equalsIgnoreCase("TrainI")){
-                I = (RealMatrix) in.readObject();
+                I = (RealMatrix) in.readObject();// update I.
             }
         }
         catch (IOException | ClassNotFoundException e){
@@ -218,5 +221,12 @@ public class Work extends Thread{
      */
     public double[][] getI() {
         return I.getData();
+    }
+
+    /**
+     * @return if U I and k have initialized.
+     */
+    public boolean isInitializedUI() {
+        return isInitializedUI;
     }
 }
