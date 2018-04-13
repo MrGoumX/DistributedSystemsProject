@@ -12,7 +12,7 @@ import java.util.List;
 
 import static java.lang.StrictMath.pow;
 
-public class Master extends Thread {
+public class Master{
 
     /**
      * Variable Definition
@@ -68,21 +68,16 @@ public class Master extends Thread {
     }
 
     /**
-     * Starting method
-     */
-    public void run(){
-        new Thread(()->initMatrices(filename)).start();
-        openServer();
-    }
-
-    /**
      * The method that opens the server and differentiate the client from the worker.
      * Also read property of connection and decide if its a client or a worker to do proper actions.
      */
-    private void openServer(){
+    private void startServer(){
         try{
+            initMatrices(filename);
             ServerSocket server = new ServerSocket(port);
+
             while(true){
+
                 socket = server.accept();
                 out = new ObjectOutputStream(socket.getOutputStream());
                 in = new ObjectInputStream(socket.getInputStream());
@@ -110,8 +105,6 @@ public class Master extends Thread {
             // creates new work and bind it with its worker through socket.
             Work W = new Work(socket, out, in);
             connections.add(W);
-            W.start();
-            W.join();
 
             // for all Works (and so for all workers) get stats.
             for(int i = 0; i < connections.size(); i++){
@@ -189,12 +182,8 @@ public class Master extends Thread {
                 rowsf.add(j, rows);
                 colsf.add(j, cols);
             } else{ // else if current worker is the last one should to elaborate all the rest elements.
-                if(rows != POIS.getRowDimension()){
-                    rowsf.add(j, POIS.getRowDimension());
-                }
-                if(cols != POIS.getColumnDimension()){
-                    colsf.add(j, POIS.getColumnDimension());
-                }
+                rowsf.add(j, POIS.getRowDimension());
+                colsf.add(j, POIS.getColumnDimension());
             }
 
             // update t and t1.
@@ -373,6 +362,6 @@ public class Master extends Thread {
      * Main method
      */
     public static void main(String[] args) {
-        new Master("C:/Users/Konstantinos/IdeaProjects/DistributedSystemsProject/src/main/cs/Test.csv", 2, 0.01, 0.001, 4200).start();
+        new Master("C:/Users/Konstantinos/IdeaProjects/DistributedSystemsProject/src/main/cs/Test.csv", 2, 0.01, 0.001, 4200).startServer();
     }
 }
