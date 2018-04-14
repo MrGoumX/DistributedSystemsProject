@@ -1,3 +1,4 @@
+//TODO: CLEAN UP ALL DATA AFTER TRAINING DUE TO RAM ISSUES!!!
 package main;
 
 import org.apache.commons.math3.linear.MatrixUtils;
@@ -78,7 +79,7 @@ public class Master{
      * Main method
      */
     public static void main(String[] args) {
-        new Master("C:/Users/Desktop/IdeaProjects/DistributedSystemsProject/src/main/Dataset1_WZ.csv", 50, 10, 0.01, 0.001, 4200).start();
+        new Master("C:/Users/Desktop/IdeaProjects/DistributedSystemsProject/src/main/Dataset1_WZ.csv", 10, 10, 0.01, 0.001, 4200).start();
     }
 
     public void start(){
@@ -327,7 +328,7 @@ public class Master{
             else{
                 prevError = currError;
                 currError = getError();
-                //if(prevError - currError< thres) break;
+                if(prevError - currError< thres) break;
             }
         }
         trained = true;
