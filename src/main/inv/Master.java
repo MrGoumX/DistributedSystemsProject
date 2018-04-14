@@ -3,25 +3,34 @@ package main.inv;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.OpenMapRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
+import org.apache.commons.math3.random.JDKRandomGenerator;
 
 import java.io.*;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 
 import static java.lang.StrictMath.pow;
 
 public class Master{
 
-    private ArrayList<Work> connections = new ArrayList<>(); // connections is a list with Works, each work used by specific worker.
+    private Scanner scanner = new Scanner(System.in); // Scanner for user input
+    private ObjectOutputStream out = null; // Output stream for socket management
+    private ObjectInputStream in = null; // Input stream for socket management
+    private Socket socket = null; // Socket for server management
+    private ArrayList<Work> workers = new ArrayList<>(); // connections is a list with Works, each work used by specific worker.
     private ArrayList<Integer> scores = new ArrayList<>(); // list score contains a score about each worker based on number of CPU cores and GB of RAM, so master can distribute properly the work to workers.
     private ArrayList<Integer> rowsf = new ArrayList<>(); // rowsf is a list that contains the limits of rows for each worker to elaborate.
     private ArrayList<Integer> colsf = new ArrayList<>(); // colsf is a list that contains the limits of columns for each worker to elaborate.
+    private ArrayList<Integer> cores = new ArrayList<>(); // cores is a list that contains the CPU cores of each worker as a number
+    private ArrayList<Long> ram = new ArrayList<>(); // ram is a list that contains the RAM of each worker as a number
 
     // port is the port in which server waits for clients.
     // iterations represents how many times U and I matrices should be trained.
     private final int port, iterations;
-    private String filename; // filename represents path to .csv file, which contains POIS matrix in a specific format.
+    private String filename, ans; // filename represents path to .csv file, which contains POIS matrix in a specific format.
     private static int worker_index = 0; // its index to get resource(RAM, CPU) only from the last worker not from the others(which resources we have already received).
 
     // lambda is L factor.
@@ -63,7 +72,22 @@ public class Master{
      * Main method
      */
     public static void main(String[] args) {
-        new Master("C:/Users/Konstantinos/IdeaProjects/DistributedSystemsProject/src/main/cs/Test.csv", 2, 0.01, 0.001, 4200).startServer();
+        new Master("C:/Users/MrGoumX/Projects/DistributedSystemsProject/src/main/cs/Test.csv", 2, 0.01, 0.001, 4200).start();
+    }
+
+    public void start(){
+        while(true){
+            System.out.println("Please select an option");
+            System.out.println("1. Open Server");
+            System.out.println("2. Train with workers");
+            ans = scanner.nextLine();
+            if(ans.equalsIgnoreCase("1")){
+                new Thread(() -> startServer()).start();
+            }
+            else if(ans.equalsIgnoreCase("2")){
+                dist();
+            }
+        }
     }
 
     /**
@@ -71,78 +95,60 @@ public class Master{
      * Also read property of connection and decide if its a client or a worker to do proper actions.
      */
     private void startServer(){
-        try{
+        try {
             initMatrices(filename); // initialize for first time all matrices.
             ServerSocket server = new ServerSocket(port);
-            while(true){
-                SocketManager s = new SocketManager(server.accept(), this, connections);
-                s.start();
+            while (true) {
+                socket = server.accept();
+                out = new ObjectOutputStream(socket.getOutputStream());
+                in = new ObjectInputStream(socket.getInputStream());
+                out.writeObject("Hello, I'm Master");
+                out.flush();
+                String diff = (String) in.readObject();
+                if (diff.equalsIgnoreCase("Hello, I'm Worker")) {
+                    worker();
+                    System.out.println("New worker connected!");
+                } else if (diff.equalsIgnoreCase("Hello, I'm Client")) {
+                    client();
+                    System.out.println("New client connected");
+                }
             }
-        }catch (IOException e){
+        }
+        catch (IOException | ClassNotFoundException e){
             e.printStackTrace();
         }
-
     }
 
-    /**
-     * initMatrices() initializes all matrices.
-     */
-    private void initMatrices(String filename){
-        try {
-            String line; // line stores temporary each line of .csv file.
-            BufferedReader br = new BufferedReader(new FileReader(filename));
-            while ((line = br.readLine()) != null) {
-                lines.add(line.split(";")); // lines is a list of arrays. Each String array contains csv values for one line.
+    private void initUI(){
+        U = MatrixUtils.createRealMatrix(sol, k);
+        I = MatrixUtils.createRealMatrix(sor, k);
+        JDKRandomGenerator ran = new JDKRandomGenerator(1);
+        for(int i = 0; i < U.getRowDimension(); i++){
+            for(int j = 0; j < U.getColumnDimension(); j++){
+                U.setEntry(i, j, (Math.floor(ran.nextFloat()*100)/100));
             }
-
-
-            sol = lines.size();
-            sor = lines.get(0).length;
-
-            // create and initialize a POIS matrix, which contains csv elements of each point of interest.
-            POIS = new OpenMapRealMatrix(sol, sor);
-            for (int i = 0; i < sol; i++) {
-                for (int j = 0; j < sor; j++) {
-                    POIS.setEntry(i, j, Integer.parseInt(lines.get(i)[j]));
-                }
-            }
-
-            // create and initialize a Bin matrix.
-            Bin = new OpenMapRealMatrix(sol, sor);
-            for (int i = 0; i < sol; i++) {
-                for (int j = 0; j < sor; j++) {
-                    Bin.setEntry(i, j, (POIS.getEntry(i, j) > 0) ? 1 : 0);
-                }
-            }
-
-            // create and initialize a C matrix.
-            C = new OpenMapRealMatrix(sol, sor);
-            for (int i = 0; i < sol; i++) {
-                for (int j = 0; j < sor; j++) {
-                    C.setEntry(i, j, 1 + 40 * POIS.getEntry(i, j));
-                }
-            }
-
-            k = (sol*sor)/(sol+sor)+1;
-            U = MatrixUtils.createRealMatrix(sol, k);
-            I = MatrixUtils.createRealMatrix(sor, k);
         }
-        catch (IOException e){
-            e.printStackTrace();
+        for(int i = 0; i < I.getRowDimension(); i++){
+            for(int j = 0; j < I.getColumnDimension(); j++){
+                I.setEntry(i,j, (Math.floor(ran.nextFloat()*100)/100));
+            }
         }
+        U = U.scalarAdd(0.01);
+        I = I.scalarAdd(0.01);
+        scores.clear();
+        rowsf.clear();
+        colsf.clear();
     }
 
     /**
      * Calculates the distribution based on a scoring system
      */
     private void calcDist(int size) {
-
         // calculate score of each worker and update score list.
-        for(int i = worker_index; i < size; i++){
-            worker_index++;
+        for(int i = 0; i < size; i++){
             int score = 0;
-            score += connections.get(i).getCores()*2;
-            score += connections.get(i).getRam()/1073741824; // 1Gb = 1073741824 bytes.
+            score += cores.get(i)*2;
+            score += ram.get(i)/1073741824; // 1Gb = 1073741824 bytes.
             scores.add(i, score);
         }
 
@@ -191,66 +197,64 @@ public class Master{
      * Matrices distribution
      */
     public void dist() {
+        //Initializes all the needed metrics, such as score and matrices U, I for the start of the training
+        initUI();
+        calcDist(workers.size());
+        calcStarts(workers.size());
 
         for(int i = 0; i < iterations; i++){ // for each iteration of training
 
-            int size = connections.size(); // so if connection list updated at the middle of an iteration, there isn't problem because still used old size.
+            int size = workers.size(); // so if connection list updated at the middle of an iteration, there isn't problem because still used old size.
             System.out.println("Iteration number " + (i+1) +"\nThe number of workers is " + size);
-
-            calcDist(size); // calculate proper amount of work per resource(ram and cpu cores).
-            calcStarts(size); // calculate which the part of process to do each worker based on calcDist().
 
             int br = 0; // br is the index of row of U to start elaboration of each worker.
             int bc = 0; // bc is the index of column of I to start elaboration of each worker.
 
-            for(int j = 0; j < size; j++){ // for each worker
-
-                if(!connections.get(j).isInitializedUI()) { // if U, I and k haven't initialized yet
-                    connections.set(j, new Work(connections.get(j).getSocket(), connections.get(j).getOut(), connections.get(j).getIn(), "InitDist", POIS, br, rowsf.get(j), bc, colsf.get(j), lamda));
-                    connections.get(j).start();
-
-                } else{ // if current iteration isn't  first one, just train U and I matrices.
-                    connections.set(j, new Work(connections.get(j).getSocket(), connections.get(j).getOut(), connections.get(j).getIn(), "TrainU", POIS, br, rowsf.get(j), U, I, lamda));
-                    connections.get(j).start();
-                    try{
-                        connections.get(j).join();
-                    }catch (Exception e){
-                        e.printStackTrace();
-                    }
-
-                    connections.set(j, new Work(connections.get(j).getSocket(), connections.get(j).getOut(), connections.get(j).getIn(), "TrainI", POIS, bc, colsf.get(j), U, I, lamda));
-                    connections.get(j).start();
-                }
-
-                if(getError() < thres){break;}
-                // update next start index for training of U and I matrices.
+            for(int j = 0; j < size; j++) { // for each worker
+                workers.set(j, new Work(workers.get(j).getSocket(), workers.get(j).getOut(), workers.get(j).getIn(), "TrainU", U, I, Bin, C, br, rowsf.get(j), lamda));
                 br = rowsf.get(j);
+            }
+            startWork();
+            combineU();
+            for(int j = 0; j < size; j++) {
+                workers.set(j, new Work(workers.get(j).getSocket(), workers.get(j).getOut(), workers.get(j).getIn(), "TrainI", U, I, Bin, C, bc, colsf.get(j), lamda));
                 bc = colsf.get(j);
             }
-
-            try{
-                for(int j = 0; j < size; connections.get(j).join(), j++);
-            }catch (Exception e){
-                e.printStackTrace();
-            }
-
-            RealMatrix UT = MatrixUtils.createRealMatrix(sol, k);
-            RealMatrix IT = MatrixUtils.createRealMatrix(sor, k);
-
-            for(int j = 0; j < size; j++){
-                double[][] Udata = connections.get(j).getU();
-                double[][] Idata = connections.get(j).getI();
-                UT = UT.add(MatrixUtils.createRealMatrix(Udata));
-                IT = IT.add(MatrixUtils.createRealMatrix(Idata));
-            }
-
-            // update U and I matrices.
-            U = UT;
-            I = IT;
+            startWork();
+            combineI();
         }
         client(); // print recommendations as result.
     }
 
+    /**
+     * Combines the matrix U from all the workers
+     */
+    private void combineU() {
+        int br = 0;
+        for(int i = 0; i < workers.size(); i++){
+            double [][] temp = workers.get(i).getU();
+            RealMatrix TU = MatrixUtils.createRealMatrix(temp);
+            for(int j = br; j < rowsf.get(i); j++){
+                U.setRowMatrix(j, TU.getRowMatrix(j));
+            }
+            br = rowsf.get(i);
+        }
+    }
+
+    /**
+     * Combines the matrix I from all the workers
+     */
+    private void combineI(){
+        int bc = 0;
+        for(int i = 0; i < workers.size(); i++){
+            double[][] temp = workers.get(i).getI();
+            RealMatrix TI = MatrixUtils.createRealMatrix(temp);
+            for(int j = bc; j < colsf.get(i); j++){
+                I.setRowMatrix(j, TI.getRowMatrix(j));
+            }
+            bc = colsf.get(i);
+        }
+    }
 
     /**
      * The method that produces the recommendation after training.
@@ -302,9 +306,86 @@ public class Master{
     }
 
     /**
+     * initMatrices() initializes all matrices.
+     */
+    private void initMatrices(String filename){
+        try {
+            String line; // line stores temporary each line of .csv file.
+            BufferedReader br = new BufferedReader(new FileReader(filename));
+            while ((line = br.readLine()) != null) {
+                lines.add(line.split(";")); // lines is a list of arrays. Each String array contains csv values for one line.
+            }
+
+            sol = lines.size();
+            sor = lines.get(0).length;
+
+            // create and initialize a POIS matrix, which contains csv elements of each point of interest.
+            POIS = new OpenMapRealMatrix(sol, sor);
+            for (int i = 0; i < sol; i++) {
+                for (int j = 0; j < sor; j++) {
+                    POIS.setEntry(i, j, Integer.parseInt(lines.get(i)[j]));
+                }
+            }
+
+            // create and initialize a Bin matrix.
+            Bin = new OpenMapRealMatrix(sol, sor);
+            for (int i = 0; i < sol; i++) {
+                for (int j = 0; j < sor; j++) {
+                    Bin.setEntry(i, j, (POIS.getEntry(i, j) > 0) ? 1 : 0);
+                }
+            }
+
+            // create and initialize a C matrix.
+            C = new OpenMapRealMatrix(sol, sor);
+            for (int i = 0; i < sol; i++) {
+                for (int j = 0; j < sor; j++) {
+                    C.setEntry(i, j, 1 + 40 * POIS.getEntry(i, j));
+                }
+            }
+
+            k = (sol*sor)/(sol+sor)+1;
+        }
+        catch (IOException e){
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Worker manager method
+     */
+    private void worker(){
+        try{
+            // creates new work and bind it with its worker through socket.
+            Work w = new Work(socket, out, in, "Stats");
+            workers.add(w);
+            w.start(); // read resources from worker
+            w.join();
+            cores.add(w.getCores());
+            ram.add(w.getRam());
+        }
+        catch (InterruptedException e){
+            e.printStackTrace();
+        }
+    }
+
+    /**
      * Client WIP
      */
     public void client(){
         System.out.println(getRecommendation(2,2));
+    }
+
+    /**
+     * Method that initiates all the workers to start work
+     */
+    private void startWork(){
+        for(int i = 0; i < workers.size(); i++) {
+            workers.get(i).start();
+            try {
+                workers.get(i).join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

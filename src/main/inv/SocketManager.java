@@ -1,4 +1,4 @@
-package main.inv;
+/*package main.inv;
 
 import java.io.*;
 import java.net.Socket;
@@ -17,7 +17,7 @@ public class SocketManager extends Thread {
      * Variable Definition
      */
 
-    public SocketManager(Socket socket, Master master, ArrayList<Work> conncentions) {
+/*    public SocketManager(Socket socket, Master master, ArrayList<Work> conncentions) {
         this.socket = socket;
         this.master = master;
         this.connections = conncentions;
@@ -25,7 +25,6 @@ public class SocketManager extends Thread {
 
     public synchronized void run(){
         try{
-
             out = new ObjectOutputStream(socket.getOutputStream());
             in = new ObjectInputStream(socket.getInputStream());
             out.writeObject("Hello, I'm Master");
@@ -33,9 +32,11 @@ public class SocketManager extends Thread {
             String diff = (String) in.readObject();
             if(diff.equalsIgnoreCase("Hello, I'm Worker")){
                 worker();
+                System.out.println("New worker connected!");
             }
             else if(diff.equalsIgnoreCase("Hello, I'm Client")){
                 master.client();
+                System.out.println("New client connected");
             }
         }catch (Exception e){
             e.printStackTrace();
@@ -45,7 +46,7 @@ public class SocketManager extends Thread {
     /**
      * The method that manages the communication and work between server and worker
      */
-    private void worker(){
+/*    private void worker(){
         try {
             // creates new work and bind it with its worker through socket.
             Work w = new Work(socket, out, in, "Stats");
@@ -54,15 +55,19 @@ public class SocketManager extends Thread {
             w.join();
 
             if(connections.size() == 1) { // starts immediately  after first worker accept and distributes process to workers.
-                new Thread("distribution_thread"){
-                    public void run(){
+                new Thread("distribution_thread") {
+                    public void run() {
                         master.dist();
                     }
-                }.start(); }
+                }.start();
+            }
+            else {
+                master.morethantwo();
+            }
         }
         catch (InterruptedException e){
             e.printStackTrace();
         }
     }
 
-}
+}*/

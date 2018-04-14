@@ -50,7 +50,6 @@ public class Worker extends Thread{
      * parameter master represent ip of master.
      */
     public Worker(String master, int port){
-
         while(true) {
             try {
                 Socket socket = new Socket(master, port);
@@ -89,9 +88,6 @@ public class Worker extends Thread{
             if(ctm && message.equalsIgnoreCase("Stats")){
                 sendStats(); // get ram-cores from class HWInfo and send them to master.
             }
-            else if(ctm && message.equalsIgnoreCase("InitDist")){
-                initTrain(); // manage only the first training of U and I matrices.
-            }
             else if(ctm && (message.equalsIgnoreCase("TrainU") || message.equalsIgnoreCase("TrainI"))){
                 train(); // manage all trainings(except first) of U and I matrices.
             }
@@ -126,83 +122,46 @@ public class Worker extends Thread{
     }
 
     /**
-     * The method that manages only the 1st training of the matrices. So this method also initialize U and I for first time.
+     * The method that manages the training of the matrices after 1st initialization
      */
-    private void initTrain() {
-
+    private void train() {
         try {
-
-            POIS = (RealMatrix) in.readObject();
-            lamda = in.readDouble();
+            double[][] TU = (double[][]) in.readObject();
+            double[][] TI = (double[][]) in.readObject();
+            Bin = (OpenMapRealMatrix) in.readObject();
+            C = (OpenMapRealMatrix) in.readObject();
             start = in.readInt();
             finish = in.readInt();
-            int startI = in.readInt();
-            int finishI = in.readInt();
-            sol = POIS.getRowDimension();
-            sor = POIS.getColumnDimension();
-            initUI(); // initialize matrices U and I only for once time.
-            initMatrices(); // Initialize Bin, C and diagonal matrices.
-            trainU(start, finish);
-            trainI(startI, finishI);
-            out.writeObject(U);
-            out.flush();
-            out.writeObject(I);
-            out.flush();
+            lamda = in.readDouble();
+            U = MatrixUtils.createRealMatrix(TU);
+            I = MatrixUtils.createRealMatrix(TI);
+            sol = Bin.getRowDimension();
+            sor = Bin.getColumnDimension();
+            k = (sol*sor)/(sol+sor)+1;
+            initMatrices();
+            System.out.println(I.getEntry(0,0));
+            if (message.equalsIgnoreCase("TrainU")) {
+                trainU(start, finish);
+                //out.writeObject(U.copy());
+                out.writeObject(U.getData());
+                out.flush();
+            } else if (message.equalsIgnoreCase("TrainI")) {
+                trainI(start, finish);
+                System.out.println(I.getEntry(0,0));
+                //out.writeObject(I.copy());
+                out.writeObject(I.getData());
+                out.flush();
+            }
         }
-        catch (IOException | ClassNotFoundException e) {
+        catch (IOException | ClassNotFoundException e){
             e.printStackTrace();
         }
-    }
-
-    /**
-     * The method that is called once to initialize matrices U, I fot first time.
-     */
-    private void initUI() {
-
-        k = (sol*sor)/(sol+sor)+1;
-        U = MatrixUtils.createRealMatrix(sol, k);
-        I = MatrixUtils.createRealMatrix(sor, k);
-
-        // initialize U and I with random values.
-        JDKRandomGenerator ran = new JDKRandomGenerator();
-        ran.setSeed(1);
-        for(int i = 0; i < U.getRowDimension(); i++){
-            for(int j = 0; j < U.getColumnDimension(); j++){
-                U.setEntry(i, j, (Math.floor(ran.nextFloat()*100)/100));
-            }
-        }
-        for(int i = 0; i < I.getRowDimension(); i++){
-            for(int j = 0; j < I.getColumnDimension(); j++){
-                I.setEntry(i, j, (Math.floor(ran.nextFloat()*100)/100));
-            }
-        }
-
-        // add 0.01 to all elements so make sure that U and I don't contains value 0.
-        U = U.scalarAdd(0.01);
-        I = I.scalarAdd(0.01);
     }
 
     /**
      * The method that initializes the matrices needed for ALS to work.
      */
     private void initMatrices() {
-
-        // initialize Bin matrix.
-        Bin = new OpenMapRealMatrix(sol, sor);
-        for (int i = 0; i < sol; i++) {
-            for (int j = 0; j < sor; j++) {
-                Bin.setEntry(i, j, (POIS.getEntry(i, j) > 0) ? 1 : 0);
-            }
-        }
-
-        // initialize C matrix.
-        C = new OpenMapRealMatrix(sol, sor);
-        for(int i = 0; i < sol; i++){
-            for(int j = 0; j < sor; j++){
-                C.setEntry(i, j, 1 + 40*POIS.getEntry(i,j));
-            }
-        }
-
         // double arrays or,oc,nc contains 1 values and have sizes of sol, sor and k respectively.
         double[] or = new double[sol];
         double[] oc = new double[sor];
@@ -264,38 +223,6 @@ public class Worker extends Thread{
             I.setRowMatrix(i, FS);
         }
     }
-
-    /**
-     * The method that manages the training of the matrices after 1st initialization
-     */
-    private void train() {
-        try {
-            POIS = (RealMatrix) in.readObject();
-            U = (RealMatrix) in.readObject();
-            I = (RealMatrix) in.readObject();
-            lamda = in.readDouble();
-            start = in.readInt();
-            finish = in.readInt();
-            sol = POIS.getRowDimension();
-            sor = POIS.getColumnDimension();
-            initMatrices();
-            if(message.equalsIgnoreCase("TrainU")){
-                trainU(start, finish);
-                out.writeObject(U);
-                out.flush();
-            }
-            else if(message.equalsIgnoreCase("TrainI")){
-                trainI(start, finish);
-                out.writeObject(I);
-                out.flush();
-            }
-        }
-        catch (IOException | ClassNotFoundException e){
-            e.printStackTrace();
-        }
-    }
-
-
 
     /**
      * Main method

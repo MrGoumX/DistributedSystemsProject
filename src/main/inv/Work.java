@@ -5,6 +5,8 @@
 
 package main.inv;
 
+import org.apache.commons.math3.linear.MatrixUtils;
+import org.apache.commons.math3.linear.OpenMapRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
 
 import java.io.IOException;
@@ -30,6 +32,8 @@ public class Work extends Thread{
     // U, I are User and Items(POIS) matrices.
     private RealMatrix POIS, U, I;
 
+    private OpenMapRealMatrix Bin, C;
+
     // start, finish, startI, finishI = limits which specifies a limited area of U and I matrices to train this worker.
     private int cores, start, finish, startI, finishI;
     private long ram;
@@ -38,42 +42,26 @@ public class Work extends Thread{
     /**
      * Constructors
      */
-    public Work(Socket socket, ObjectOutputStream out, ObjectInputStream in){
-        this.socket = socket;
-        this.out = out;
-        this.in = in;
-    }
 
     public Work(Socket socket, ObjectOutputStream out, ObjectInputStream in, String message){
         this.socket = socket;
         this.out = out;
         this.in = in;
         this.message = message;
+        isInitializedUI = true;
     }
 
-    public Work(Socket socket, ObjectOutputStream out, ObjectInputStream in, String message, RealMatrix POIS, int start, int finish, int startI, int finistI, double lamda){
+    public Work(Socket socket, ObjectOutputStream out, ObjectInputStream in, String message, RealMatrix U, RealMatrix I, OpenMapRealMatrix Bin, OpenMapRealMatrix C, int start, int finish, double lamda){
         this.socket = socket;
         this.out = out;
         this.in = in;
         this.message = message;
-        this.POIS = POIS;
-        this.start = start;
-        this.finish = finish;
-        this.startI = startI;
-        this.finishI = finistI;
-        this.lamda = lamda;
-    }
-
-    public Work(Socket socket, ObjectOutputStream out, ObjectInputStream in, String message, RealMatrix POIS, int start, int finish, RealMatrix U, RealMatrix I, double lamda){
-        this.socket = socket;
-        this.out = out;
-        this.in = in;
-        this.message = message;
-        this.POIS = POIS;
-        this.start = start;
-        this.finish = finish;
         this.U = U;
         this.I = I;
+        this.Bin = Bin;
+        this.C = C;
+        this.start = start;
+        this.finish = finish;
         this.lamda = lamda;
     }
 
@@ -83,10 +71,6 @@ public class Work extends Thread{
     public synchronized void run(){
         if(message.equalsIgnoreCase("Stats")){
             getStats();
-        }
-        else if(message.equalsIgnoreCase("InitDist")){ // "InitDist" message represents only the first time training.
-            sendInitMatrices();
-            isInitializedUI = true;
         }
         else if(message.equalsIgnoreCase("TrainU") || message.equalsIgnoreCase("TrainI")){
             sendMatrices();
@@ -113,46 +97,26 @@ public class Work extends Thread{
     }
 
     /**
-     * Sends matrices to worker only for first initialization and training, and take as result matrices U and I after training.
-     */
-    private void sendInitMatrices() {
-        try {
-            out.writeObject(message);
-            out.flush();
-            out.writeObject(POIS);
-            out.writeDouble(lamda);
-            out.writeInt(start);
-            out.writeInt(finish);
-            out.writeInt(startI);
-            out.writeInt(finishI);
-            out.flush();
-            U = (RealMatrix) in.readObject();
-            I = (RealMatrix) in.readObject();
-        }
-        catch (IOException | ClassNotFoundException e){
-            e.printStackTrace();
-        }
-    }
-
-    /**
      * Sends matrices to worker after first initialization and take as result matrices U and I after training.
      */
     private void sendMatrices() {
         try {
             out.writeObject(message);
             out.flush();
-            out.writeObject(POIS);
-            out.writeObject(U); // U and I contains value of first training within sendInitMatrices().
-            out.writeObject(I);
-            out.writeDouble(lamda);
+            out.writeObject(U.getData());
+            out.writeObject(I.getData());
+            out.writeObject(Bin);
+            out.writeObject(C);
             out.writeInt(start);
             out.writeInt(finish);
+            out.writeDouble(lamda);
             out.flush();
-            if(message.equalsIgnoreCase("TrainU")){
-                U = (RealMatrix) in.readObject(); // update U.
-            }
-            else if(message.equalsIgnoreCase("TrainI")){
-                I = (RealMatrix) in.readObject();// update I.
+            if (message.equalsIgnoreCase("TrainU")) {
+                double[][] TU = (double[][]) in.readObject();
+                U = MatrixUtils.createRealMatrix(TU); // update U.
+            } else if (message.equalsIgnoreCase("TrainI")) {
+                double[][] TI = (double[][]) in.readObject();
+                I = MatrixUtils.createRealMatrix(TI); // update I.
             }
         }
         catch (IOException | ClassNotFoundException e){
@@ -228,5 +192,13 @@ public class Work extends Thread{
      */
     public boolean isInitializedUI() {
         return isInitializedUI;
+    }
+
+    public RealMatrix getRU(){
+        return U.copy();
+    }
+
+    public RealMatrix getRI(){
+        return I.copy();
     }
 }

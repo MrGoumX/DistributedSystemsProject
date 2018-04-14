@@ -194,29 +194,40 @@ public class ALS_Parted {
         return recom;
     }
 
+    public RealMatrix getU() {
+        return U;
+    }
+
+    public RealMatrix getI() {
+        return I;
+    }
+
     public static void main(String[] args) throws IOException{
 
-        String file = "C:/Users/Konstantinos/IdeaProjects/DistributedSystemsProject/src/main/cs/Test.csv";
+        String file = "C:/Users/MrGoumX/Projects/DistributedSystemsProject/src/main/cs/Test.csv";
         double thres = 0.005, lamda = 0.01;
         ALS_Parted ALS = new ALS_Parted(file, lamda);
         ALS.initMatrices();
 
         // first iteration.
-        ALS.trainU();
-        ALS.trainI();
+        //ALS.trainU();
+        //ALS.trainI();
         double prevError, currentError = ALS.getError();
 
         // rest iterations.
         // foor loop stops when complete all iterations or the difference of error of 2 iterations become less than 0.005.
-        for(int i = 1; i < 2; i++){
+        for(int i = 0; i < 2; i++){
             ALS.trainU();
+            System.out.println(ALS.getU().toString());
             ALS.trainI();
+            System.out.println(ALS.getI().toString());
             prevError = currentError;
             currentError = ALS.getError();
             if( prevError-currentError < thres){
-                break;
+                //break;
             }
         }
+        System.out.println(ALS.getI().getEntry(0,0));
         ArrayList<Integer> rec = ALS.getRecommendation(2, 2);
         System.out.println("Rec: " + rec);
     }
