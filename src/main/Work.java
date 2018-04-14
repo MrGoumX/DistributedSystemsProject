@@ -33,7 +33,7 @@ public class Work extends Thread{
     private OpenMapRealMatrix Bin, C;
 
     // start, finish, startI, finishI = limits which specifies a limited area of U and I matrices to train this worker.
-    private int cores, start, finish, startI, finishI;
+    private int cores, start, finish, k;
     private long ram;
     private double lamda; // lamda is L factor
 
@@ -48,7 +48,7 @@ public class Work extends Thread{
         this.message = message;
     }
 
-    public Work(Socket socket, ObjectOutputStream out, ObjectInputStream in, String message, RealMatrix U, RealMatrix I, OpenMapRealMatrix Bin, OpenMapRealMatrix C, int start, int finish, double lamda){
+    public Work(Socket socket, ObjectOutputStream out, ObjectInputStream in, String message, RealMatrix U, RealMatrix I, OpenMapRealMatrix Bin, OpenMapRealMatrix C, int start, int finish, int k, double lamda){
         this.socket = socket;
         this.out = out;
         this.in = in;
@@ -59,6 +59,7 @@ public class Work extends Thread{
         this.C = C;
         this.start = start;
         this.finish = finish;
+        this.k = k;
         this.lamda = lamda;
     }
 
@@ -106,6 +107,7 @@ public class Work extends Thread{
             out.writeObject(C);
             out.writeInt(start);
             out.writeInt(finish);
+            out.writeInt(k);
             out.writeDouble(lamda);
             out.flush();
             if (message.equalsIgnoreCase("TrainU")) {

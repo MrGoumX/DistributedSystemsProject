@@ -85,6 +85,6 @@ public class Client extends Thread{
     }
 
     public static void main(String[] args) {
-        new Client("127.0.0.1", 4200, 0, 1).start();
+        new Client("127.0.0.1", 4200, 0, 0).start();
     }
 }

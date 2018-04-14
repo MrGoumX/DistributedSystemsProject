@@ -119,9 +119,42 @@ public class ALS_Parted {
         I = I.scalarAdd(0.01);
     }
 
-    private void trainU(){
+    private void tempU(){
+        int cores = Runtime.getRuntime().availableProcessors();
+        int tt = sol/cores;
+        int t = sol/cores;
+        int t2 = sol%cores;
+        int b = 0;
+        Thread[] test = new Thread[cores];
+        for(int i = 0; i < cores; i++){
+            if(t2 != 0 && i == cores-1){
+                t += t2;
+            }
+            System.out.println(t);
+            final int fb = b;
+            final int ft = t;
+            test[i] = new Thread(() -> trainU(fb, ft));
+            b = t;
+            t += tt;
+        }
+        for(int i = 0; i < cores; i++){
+            test[i].start();
+        }
+        for(int i = 0; i < cores; i++){
+            try{
+                test[i].join();
+            }
+            catch (InterruptedException e){
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void trainU(int start, int finish){
+
+
         RealMatrix IT = I.transpose();
-        for(int i = 0; i < sol; i ++) {
+        for(int i = start; i < finish; i++) {
             double[] row = C.getRow(i);
             RealMatrix temp = MatrixUtils.createRealDiagonalMatrix(row);
             FS = IT.multiply(temp.subtract(ocm));
@@ -137,9 +170,40 @@ public class ALS_Parted {
         }
     }
 
-    private void trainI(){
+    private void tempI(){
+        int cores = Runtime.getRuntime().availableProcessors();
+        int tt = sor/cores;
+        int t = sor/cores;
+        int t2 = sor%cores;
+        int b = 0;
+        Thread[] test = new Thread[cores];
+        for(int i = 0; i < cores; i++){
+            if(t2 != 0 && i == cores-1){
+                t += t2;
+            }
+            System.out.println(t);
+            final int fb = b;
+            final int ft = t;
+            test[i] = new Thread(() -> trainI(fb, ft));
+            b = t;
+            t += tt;
+        }
+        for(int i = 0; i < cores; i++){
+            test[i].start();
+        }
+        for(int i = 0; i < cores; i++){
+            try{
+                test[i].join();
+            }
+            catch (InterruptedException e){
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void trainI(int start, int finish){
         RealMatrix UT = U.transpose();
-        for(int i = 0; i < sor; i++) {
+        for(int i = start; i < finish; i++) {
             double[] col = C.getColumn(i);
             RealMatrix temp = MatrixUtils.createRealDiagonalMatrix(col);
             FS = UT.multiply(temp.subtract(orm));
@@ -204,7 +268,7 @@ public class ALS_Parted {
 
     public static void main(String[] args) throws IOException{
 
-        String file = "C:/Users/MrGoumX/Projects/DistributedSystemsProject/src/main/Test.csv";
+        String file = "C:/Users/Desktop/IdeaProjects/DistributedSystemsProject/src/main/Test.csv";
         double thres = 0.005, lamda = 0.01;
         ALS_Parted ALS = new ALS_Parted(file, lamda);
         ALS.initMatrices();
@@ -217,9 +281,9 @@ public class ALS_Parted {
         // rest iterations.
         // foor loop stops when complete all iterations or the difference of error of 2 iterations become less than 0.005.
         for(int i = 0; i < 2; i++){
-            ALS.trainU();
-            System.out.println(ALS.getU().toString());
-            ALS.trainI();
+            ALS.tempU();
+            //System.out.println(ALS.getU().toString());
+            ALS.tempI();
             System.out.println(ALS.getI().toString());
             prevError = currentError;
             currentError = ALS.getError();

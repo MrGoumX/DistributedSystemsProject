@@ -39,7 +39,7 @@ public class Master{
     private static int worker_index = 0; // its index to get resource(RAM, CPU) only from the last worker not from the others(which resources we have already received).
 
     // lambda is L factor.
-    private double thres, lamda;
+    private double thres, lamda, prevError, currError;
 
     // POIS matrix contains csv elements of each point of interest.
     // C matrix contains a score for each point.
@@ -65,9 +65,10 @@ public class Master{
      * @param lamda The L factor for the training of the U and I
      * @param thres The error threshold needed to stop the training of U and I
      */
-    Master(String filename, int iterations, double lamda, double thres, int port){
+    Master(String filename, int iterations, int k, double lamda, double thres, int port){
         this.filename = filename;
         this.iterations = iterations;
+        this.k = k;
         this.lamda = lamda;
         this.thres = thres;
         this.port = port;
@@ -77,7 +78,7 @@ public class Master{
      * Main method
      */
     public static void main(String[] args) {
-        new Master("C:/Users/MrGoumX/Projects/DistributedSystemsProject/src/main/Test.csv", 2, 0.01, 0.001, 4200).start();
+        new Master("C:/Users/Desktop/IdeaProjects/DistributedSystemsProject/src/main/Dataset1_WZ.csv", 50, 10, 0.01, 0.001, 4200).start();
     }
 
     public void start(){
@@ -309,17 +310,25 @@ public class Master{
             int bc = 0; // bc is the index of column of I to start elaboration of each worker.
 
             for(int j = 0; j < size; j++) { // for each worker
-                workers.set(j, new Work(workers.get(j).getSocket(), workers.get(j).getOut(), workers.get(j).getIn(), "TrainU", U, I, Bin, C, br, rowsf.get(j), lamda));
+                workers.set(j, new Work(workers.get(j).getSocket(), workers.get(j).getOut(), workers.get(j).getIn(), "TrainU", U, I, Bin, C, br, rowsf.get(j), k, lamda));
                 br = rowsf.get(j);
             }
             startWork();
             combineU();
             for(int j = 0; j < size; j++) {
-                workers.set(j, new Work(workers.get(j).getSocket(), workers.get(j).getOut(), workers.get(j).getIn(), "TrainI", U, I, Bin, C, bc, colsf.get(j), lamda));
+                workers.set(j, new Work(workers.get(j).getSocket(), workers.get(j).getOut(), workers.get(j).getIn(), "TrainI", U, I, Bin, C, bc, colsf.get(j), k, lamda));
                 bc = colsf.get(j);
             }
             startWork();
             combineI();
+            if(i==0){
+                prevError = currError = getError();
+            }
+            else{
+                prevError = currError;
+                currError = getError();
+                //if(prevError - currError< thres) break;
+            }
         }
         trained = true;
         System.out.println("Matrices are finished training");
@@ -442,7 +451,6 @@ public class Master{
                 }
             }
 
-            k = (sol*sor)/(sol+sor)+1;
         }
         catch (IOException e){
             e.printStackTrace();
@@ -495,6 +503,8 @@ public class Master{
     private void startWork(){
         for(int i = 0; i < workers.size(); i++) {
             workers.get(i).start();
+        }
+        for(int i = 0; i < workers.size(); i++){
             try {
                 workers.get(i).join();
             } catch (InterruptedException e) {

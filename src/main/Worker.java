@@ -138,12 +138,12 @@ public class Worker extends Thread{
             C = (OpenMapRealMatrix) in.readObject();
             start = in.readInt();
             finish = in.readInt();
+            k = in.readInt();
             lamda = in.readDouble();
             U = MatrixUtils.createRealMatrix(TU);
             I = MatrixUtils.createRealMatrix(TI);
             sol = Bin.getRowDimension();
             sor = Bin.getColumnDimension();
-            k = (sol*sor)/(sol+sor)+1;
             initMatrices();
             System.out.println(I.getEntry(0,0));
             if (message.equalsIgnoreCase("TrainU")) {
@@ -194,6 +194,7 @@ public class Worker extends Thread{
         RealMatrix IT = I.transpose();
         System.out.println("Rows range: " + start + " - " + finish);
         for(int i = start; i < finish; i++) {
+            System.out.println(i);
             RealMatrix temp = MatrixUtils.createRealDiagonalMatrix(C.getRow(i));
             FS = IT.multiply(temp.subtract(ocm));
             FS = FS.multiply(I);
@@ -214,6 +215,7 @@ public class Worker extends Thread{
         RealMatrix UT = U.transpose();
         System.out.println("Columns range: " + start + " - " + finish);
         for(int i = start; i < finish; i++) {
+            System.out.println(i);
             RealMatrix temp = MatrixUtils.createRealDiagonalMatrix(C.getColumn(i));
             FS = UT.multiply(temp.subtract(orm));
             FS = FS.multiply(U);
