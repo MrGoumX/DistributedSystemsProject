@@ -1,4 +1,4 @@
-package main.inv;
+package main;
 
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.OpenMapRealMatrix;
@@ -13,12 +13,14 @@ import java.util.List;
 import java.util.Scanner;
 
 import static java.lang.StrictMath.pow;
+import static java.lang.System.exit;
 
 public class Master{
 
     private Scanner scanner = new Scanner(System.in); // Scanner for user input
     private ObjectOutputStream out = null; // Output stream for socket management
     private ObjectInputStream in = null; // Input stream for socket management
+    private ServerSocket server = null; // ServerSocket for server management
     private Socket socket = null; // Socket for server management
     private ArrayList<Work> workers = new ArrayList<>(); // connections is a list with Works, each work used by specific worker.
     private ArrayList<Integer> scores = new ArrayList<>(); // list score contains a score about each worker based on number of CPU cores and GB of RAM, so master can distribute properly the work to workers.
@@ -26,11 +28,14 @@ public class Master{
     private ArrayList<Integer> colsf = new ArrayList<>(); // colsf is a list that contains the limits of columns for each worker to elaborate.
     private ArrayList<Integer> cores = new ArrayList<>(); // cores is a list that contains the CPU cores of each worker as a number
     private ArrayList<Long> ram = new ArrayList<>(); // ram is a list that contains the RAM of each worker as a number
+    private Thread serverThread, checkingThread = null;
 
     // port is the port in which server waits for clients.
     // iterations represents how many times U and I matrices should be trained.
-    private final int port, iterations;
-    private String filename, ans; // filename represents path to .csv file, which contains POIS matrix in a specific format.
+    private boolean trained = false;
+    private final int port;
+    private int iterations;
+    private String filename, ans, temp; // filename represents path to .csv file, which contains POIS matrix in a specific format.
     private static int worker_index = 0; // its index to get resource(RAM, CPU) only from the last worker not from the others(which resources we have already received).
 
     // lambda is L factor.
@@ -72,20 +77,94 @@ public class Master{
      * Main method
      */
     public static void main(String[] args) {
-        new Master("C:/Users/MrGoumX/Projects/DistributedSystemsProject/src/main/cs/Test.csv", 2, 0.01, 0.001, 4200).start();
+        new Master("C:/Users/MrGoumX/Projects/DistributedSystemsProject/src/main/Test.csv", 2, 0.01, 0.001, 4200).start();
     }
 
     public void start(){
         while(true){
             System.out.println("Please select an option");
             System.out.println("1. Open Server");
-            System.out.println("2. Train with workers");
+            System.out.println("2. Change settings");
+            System.out.println("3. Train with workers");
+            System.out.println("4. Close Client connections");
+            System.out.println("0. Exit");
             ans = scanner.nextLine();
             if(ans.equalsIgnoreCase("1")){
-                new Thread(() -> startServer()).start();
+                serverThread = new Thread(() -> startServer());
+                serverThread.start();
+                checkingThread = new Thread(() -> checkConnections());
+                checkingThread.start();
             }
             else if(ans.equalsIgnoreCase("2")){
+                while(true){
+                    System.out.println("Please give new source csv file as string. If you don't want to change press Enter/Return");
+                    temp = scanner.nextLine();
+                    if(temp.equalsIgnoreCase("")){
+                        break;
+                    }
+                    else if(temp.matches(".")){
+                        filename = temp;
+                        break;
+                    }
+                }
+                while(true){
+                    System.out.println("Please give number of iterations or press Enter/Return");
+                    temp = scanner.nextLine();
+                    if(temp.matches("\\d+")){
+                        iterations = Integer.parseInt(temp);
+                        break;
+                    }
+                    else if(temp.equalsIgnoreCase("")){
+                        break;
+                    }
+                    else{
+                        System.out.println("Invalid Data. Try Again");
+                    }
+                }
+                while(true){
+                    System.out.println("Please give lambda or press Enter/Return");
+                    temp = scanner.nextLine();
+                    if(temp.matches("\\d+")){
+                        lamda = Double.parseDouble(temp);
+                        break;
+                    }
+                    else if(temp.equalsIgnoreCase("")){
+                        break;
+                    }
+                    else{
+                        System.out.println("Invalid Data. Try Again");
+                    }
+                }
+                while(true){
+                    System.out.println("Please give final error or press Enter/Return");
+                    temp = scanner.nextLine();
+                    if(temp.matches("\\d+")){
+                        thres = Double.parseDouble(temp);
+                        break;
+                    }
+                    else if(temp.equalsIgnoreCase("")){
+                        break;
+                    }
+                    else{
+                        System.out.println("Invalid Data. Try Again");
+                    }
+                }
+            }
+            else if(ans.equalsIgnoreCase("3")){
                 dist();
+            }
+            else if(ans.equalsIgnoreCase("4")){
+                trained = false;
+            }
+            else if(ans.equalsIgnoreCase("0")){
+                for(int i = 0; i < workers.size(); i++){
+                    workers.set(i, new Work(workers.get(i).getSocket(), workers.get(i).getOut(), workers.get(i).getIn(), "Close"));
+                }
+                startWork();
+                exit(0);
+            }
+            else{
+                System.out.println("Invalid Option. Try again");
             }
         }
     }
@@ -96,8 +175,7 @@ public class Master{
      */
     private void startServer(){
         try {
-            initMatrices(filename); // initialize for first time all matrices.
-            ServerSocket server = new ServerSocket(port);
+            server = new ServerSocket(port);
             while (true) {
                 socket = server.accept();
                 out = new ObjectOutputStream(socket.getOutputStream());
@@ -110,7 +188,7 @@ public class Master{
                     System.out.println("New worker connected!");
                 } else if (diff.equalsIgnoreCase("Hello, I'm Client")) {
                     client();
-                    System.out.println("New client connected");
+                    System.out.println("New client query!");
                 }
             }
         }
@@ -119,7 +197,26 @@ public class Master{
         }
     }
 
+    /**
+     * Method that checks all worker connections
+     */
+    private void checkConnections(){
+        while(true){
+            for(int i = 0; i < workers.size(); i++){
+                if(!workers.get(i).getSocket().isConnected()){
+                    cores.remove(i);
+                    ram.remove(i);
+                    workers.remove(i);
+                }
+            }
+        }
+    }
+
+    /**
+     * Method that initializes POIS, U & I matrices
+     */
     private void initUI(){
+        initMatrices(filename); // initialize for first time all matrices.
         U = MatrixUtils.createRealMatrix(sol, k);
         I = MatrixUtils.createRealMatrix(sor, k);
         JDKRandomGenerator ran = new JDKRandomGenerator(1);
@@ -198,6 +295,7 @@ public class Master{
      */
     public void dist() {
         //Initializes all the needed metrics, such as score and matrices U, I for the start of the training
+        trained = false;
         initUI();
         calcDist(workers.size());
         calcStarts(workers.size());
@@ -223,7 +321,8 @@ public class Master{
             startWork();
             combineI();
         }
-        client(); // print recommendations as result.
+        trained = true;
+        System.out.println("Matrices are finished training");
     }
 
     /**
@@ -372,7 +471,22 @@ public class Master{
      * Client WIP
      */
     public void client(){
-        System.out.println(getRecommendation(2,2));
+        try {
+            int i = in.readInt();
+            int j = in.readInt();
+            out.writeBoolean(trained);
+            out.flush();
+            if (!trained) {
+                out.writeObject("Matrices are not trained yet. So not recommendation for you. For now. OK?");
+                out.flush();
+            } else {
+                out.writeObject(getRecommendation(i,j));
+                out.flush();
+            }
+        }
+        catch (IOException e){
+            e.printStackTrace();
+        }
     }
 
     /**

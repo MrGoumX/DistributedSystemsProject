@@ -1,7 +1,7 @@
 /*
 * CSV class create random Test.csv files with random values, which represent POIS array for testing purposes.*/
 
-package main.mf;
+package main;
 
 import org.apache.commons.math3.random.JDKRandomGenerator;
 

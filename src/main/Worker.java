@@ -1,21 +1,23 @@
-package main.inv;
+package main;
 
-import main.cs.HWInfo;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.OpenMapRealMatrix;
 import org.apache.commons.math3.linear.QRDecomposition;
 import org.apache.commons.math3.linear.RealMatrix;
-import org.apache.commons.math3.random.JDKRandomGenerator;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
+import static java.lang.System.exit;
+
+
 public class Worker extends Thread{
     /**
      * Variable Definition
      */
+    private Socket socket;
     private ObjectInputStream in;
     private ObjectOutputStream out;
 
@@ -45,6 +47,7 @@ public class Worker extends Thread{
 
     private double lamda; // lamda is L factor
 
+
     /**
      * Constructors
      * parameter master represent ip of master.
@@ -52,7 +55,7 @@ public class Worker extends Thread{
     public Worker(String master, int port){
         while(true) {
             try {
-                Socket socket = new Socket(master, port);
+                socket = new Socket(master, port);
                 if (socket.isConnected()) {
                     out = new ObjectOutputStream(socket.getOutputStream());
                     in = new ObjectInputStream(socket.getInputStream());
@@ -90,6 +93,9 @@ public class Worker extends Thread{
             }
             else if(ctm && (message.equalsIgnoreCase("TrainU") || message.equalsIgnoreCase("TrainI"))){
                 train(); // manage all trainings(except first) of U and I matrices.
+            }
+            else if(ctm && (message.equalsIgnoreCase("Close"))){
+                exit(0);
             }
         }
     }
@@ -142,13 +148,11 @@ public class Worker extends Thread{
             System.out.println(I.getEntry(0,0));
             if (message.equalsIgnoreCase("TrainU")) {
                 trainU(start, finish);
-                //out.writeObject(U.copy());
                 out.writeObject(U.getData());
                 out.flush();
             } else if (message.equalsIgnoreCase("TrainI")) {
                 trainI(start, finish);
                 System.out.println(I.getEntry(0,0));
-                //out.writeObject(I.copy());
                 out.writeObject(I.getData());
                 out.flush();
             }

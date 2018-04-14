@@ -3,7 +3,7 @@
 * class Work used to parse matrices, factors and others parameters from master to worker in new thread.
 * */
 
-package main.inv;
+package main;
 
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.OpenMapRealMatrix;
@@ -22,8 +22,6 @@ public class Work extends Thread{
     private Socket socket;
     private ObjectOutputStream out;
     private ObjectInputStream in;
-
-    private boolean isInitializedUI = false;
 
     // message is a command(or an order) from master to worker.
     private String message = "";
@@ -48,7 +46,6 @@ public class Work extends Thread{
         this.out = out;
         this.in = in;
         this.message = message;
-        isInitializedUI = true;
     }
 
     public Work(Socket socket, ObjectOutputStream out, ObjectInputStream in, String message, RealMatrix U, RealMatrix I, OpenMapRealMatrix Bin, OpenMapRealMatrix C, int start, int finish, double lamda){
@@ -129,9 +126,8 @@ public class Work extends Thread{
      */
     private void close() {
         try{
-            out.close();
-            in.close();
-            socket.close();
+            out.writeObject(message);
+            out.flush();
         }
         catch (IOException e){
             e.printStackTrace();
@@ -187,18 +183,4 @@ public class Work extends Thread{
         return I.getData();
     }
 
-    /**
-     * @return if U I and k have initialized.
-     */
-    public boolean isInitializedUI() {
-        return isInitializedUI;
-    }
-
-    public RealMatrix getRU(){
-        return U.copy();
-    }
-
-    public RealMatrix getRI(){
-        return I.copy();
-    }
 }
