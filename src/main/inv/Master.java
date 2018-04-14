@@ -192,48 +192,42 @@ public class Master{
         for(int i = 0; i < iterations; i++){ // for each iteration of training
 
             int size = connections.size(); // so if connection list updated at the middle of an iteration, there isn't problem because still used old size.
+            System.out.println("The number of workers is " + size);
+
             calcDist(size); // calculate proper amount of work per resource(ram and cpu cores).
             calcStarts(size); // calculate which the part of process to do each worker based on calcDist().
 
             int br = 0; // br is the index of row of U to start elaboration of each worker.
             int bc = 0; // bc is the index of column of I to start elaboration of each worker.
 
-            System.out.println("Workers are:");
-
             for(int j = 0; j < size; j++){ // for each worker
-                System.out.println("worker " + (j+1));
+
                 if(!connections.get(j).isInitializedUI()) { // if U, I and k haven't initialized yet
                     connections.set(j, new Work(connections.get(j).getSocket(), connections.get(j).getOut(), connections.get(j).getIn(), "InitDist", POIS, br, rowsf.get(j), bc, colsf.get(j), lamda));
                     connections.get(j).start();
-                    try{
-                        connections.get(j).join();
-                    }
-                    catch (InterruptedException e){
-                        e.printStackTrace();
-                    }
 
                 } else{ // if current iteration isn't  first one, just train U and I matrices.
                     connections.set(j, new Work(connections.get(j).getSocket(), connections.get(j).getOut(), connections.get(j).getIn(), "TrainU", POIS, br, rowsf.get(j), U, I, lamda));
                     connections.get(j).start();
                     try{
                         connections.get(j).join();
-                    }
-                    catch (InterruptedException e){
+                    }catch (Exception e){
                         e.printStackTrace();
                     }
+
                     connections.set(j, new Work(connections.get(j).getSocket(), connections.get(j).getOut(), connections.get(j).getIn(), "TrainI", POIS, bc, colsf.get(j), U, I, lamda));
                     connections.get(j).start();
-                    try{
-                        connections.get(j).join();
-                    }
-                    catch (InterruptedException e){
-                        e.printStackTrace();
-                    }
                 }
 
                 // update next start index for training of U and I matrices.
                 br = rowsf.get(j);
                 bc = colsf.get(j);
+            }
+
+            try{
+                for(int j = 0; j < size; connections.get(j).join(), j++);
+            }catch (Exception e){
+                e.printStackTrace();
             }
 
             RealMatrix UT = MatrixUtils.createRealMatrix(sol, k);
