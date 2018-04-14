@@ -229,9 +229,8 @@ public class Worker extends Thread{
      */
     private void trainU(int start, int finish){
         RealMatrix IT = I.transpose();
-        System.out.println("Rows: ");
+        System.out.println("Rows range: " + start + " - " + finish);
         for(int i = start; i < finish; i++) {
-            System.out.println(i);
             RealMatrix temp = MatrixUtils.createRealDiagonalMatrix(C.getRow(i));
             FS = IT.multiply(temp.subtract(ocm));
             FS = FS.multiply(I);
@@ -250,9 +249,8 @@ public class Worker extends Thread{
      */
     private void trainI(int start, int finish) {
         RealMatrix UT = U.transpose();
-        System.out.println("Columns: ");
+        System.out.println("Columns range: " + start + " - " + finish);
         for(int i = start; i < finish; i++) {
-            System.out.println(i);
             RealMatrix temp = MatrixUtils.createRealDiagonalMatrix(C.getColumn(i));
             FS = UT.multiply(temp.subtract(orm));
             FS = FS.multiply(U);

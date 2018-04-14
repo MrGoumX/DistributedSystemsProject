@@ -22,7 +22,7 @@ public class Master{
     // iterations represents how many times U and I matrices should be trained.
     private final int port, iterations;
     private String filename; // filename represents path to .csv file, which contains POIS matrix in a specific format.
-    private static int worker_index = 0;
+    private static int worker_index = 0; // its index to get resource(RAM, CPU) only from the last worker not from the others(which resources we have already received).
 
     // lambda is L factor.
     private double thres, lamda;
@@ -195,7 +195,7 @@ public class Master{
         for(int i = 0; i < iterations; i++){ // for each iteration of training
 
             int size = connections.size(); // so if connection list updated at the middle of an iteration, there isn't problem because still used old size.
-            System.out.println("The number of workers is " + size);
+            System.out.println("Iteration number " + (i+1) +"\nThe number of workers is " + size);
 
             calcDist(size); // calculate proper amount of work per resource(ram and cpu cores).
             calcStarts(size); // calculate which the part of process to do each worker based on calcDist().
@@ -222,6 +222,7 @@ public class Master{
                     connections.get(j).start();
                 }
 
+                if(getError() < thres){break;}
                 // update next start index for training of U and I matrices.
                 br = rowsf.get(j);
                 bc = colsf.get(j);
