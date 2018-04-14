@@ -22,6 +22,7 @@ public class Master{
     // iterations represents how many times U and I matrices should be trained.
     private final int port, iterations;
     private String filename; // filename represents path to .csv file, which contains POIS matrix in a specific format.
+    private static int worker_index = 0;
 
     // lambda is L factor.
     private double thres, lamda;
@@ -137,7 +138,8 @@ public class Master{
     private void calcDist(int size) {
 
         // calculate score of each worker and update score list.
-        for(int i = 0; i < size; i++){
+        for(int i = worker_index; i < size; i++){
+            worker_index++;
             int score = 0;
             score += connections.get(i).getCores()*2;
             score += connections.get(i).getRam()/1073741824; // 1Gb = 1073741824 bytes.
@@ -149,6 +151,7 @@ public class Master{
         for(Integer i : scores){
             total += i;
         }
+
 
         // rr = how many users rows should be elaborated per resource score.
         // rc = how many items(POIS) columns should be elaborated per resource score.
