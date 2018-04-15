@@ -145,14 +145,12 @@ public class Worker extends Thread{
             sol = Bin.getRowDimension();
             sor = Bin.getColumnDimension();
             initMatrices();
-            System.out.println(I.getEntry(0,0));
             if (message.equalsIgnoreCase("TrainU")) {
                 trainU(start, finish);
                 out.writeObject(U.getData());
                 out.flush();
             } else if (message.equalsIgnoreCase("TrainI")) {
                 trainI(start, finish);
-                System.out.println(I.getEntry(0,0));
                 out.writeObject(I.getData());
                 out.flush();
             }
@@ -192,13 +190,13 @@ public class Worker extends Thread{
      */
     private void trainU(int start, int finish){
         RealMatrix IT = I.transpose();
+        RealMatrix MI = IT.multiply(I);
         System.out.println("Rows range: " + start + " - " + finish);
         for(int i = start; i < finish; i++) {
-            System.out.println(i);
             RealMatrix temp = MatrixUtils.createRealDiagonalMatrix(C.getRow(i));
             FS = IT.multiply(temp.subtract(ocm));
             FS = FS.multiply(I);
-            FS = FS.add(IT.multiply(I));
+            FS = FS.add(MI);
             FS = FS.add(ncm.scalarMultiply(lamda));
             FS = new QRDecomposition(FS).getSolver().getInverse();
             FS = FS.multiply(IT);
@@ -213,13 +211,13 @@ public class Worker extends Thread{
      */
     private void trainI(int start, int finish) {
         RealMatrix UT = U.transpose();
+        RealMatrix MU = UT.multiply(U);
         System.out.println("Columns range: " + start + " - " + finish);
         for(int i = start; i < finish; i++) {
-            System.out.println(i);
             RealMatrix temp = MatrixUtils.createRealDiagonalMatrix(C.getColumn(i));
             FS = UT.multiply(temp.subtract(orm));
             FS = FS.multiply(U);
-            FS = FS.add(UT.multiply(U));
+            FS = FS.add(MU);
             FS = FS.add( ncm.scalarMultiply(lamda));
             FS = new QRDecomposition(FS).getSolver().getInverse();
             FS = FS.multiply(UT);

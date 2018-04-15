@@ -9,9 +9,7 @@ import org.apache.commons.math3.random.JDKRandomGenerator;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 import static java.lang.StrictMath.pow;
 import static java.lang.System.exit;
@@ -33,11 +31,10 @@ public class Master{
 
     // port is the port in which server waits for clients.
     // iterations represents how many times U and I matrices should be trained.
-    private boolean trained = false;
+    private boolean trained = true;
     private final int port;
     private int iterations;
     private String filename, ans, temp; // filename represents path to .csv file, which contains POIS matrix in a specific format.
-    private static int worker_index = 0; // its index to get resource(RAM, CPU) only from the last worker not from the others(which resources we have already received).
 
     // lambda is L factor.
     private double thres, lamda, prevError, currError;
@@ -79,7 +76,7 @@ public class Master{
      * Main method
      */
     public static void main(String[] args) {
-        new Master("C:/Users/Desktop/IdeaProjects/DistributedSystemsProject/src/main/Dataset1_WZ.csv", 10, 10, 0.01, 0.001, 4200).start();
+        new Master("D:/MGX/Desktop/DistributedSystemsProject/src/main/Test.csv", 10, 100, 0.01, 0.001, 4200).start();
     }
 
     public void start(){
@@ -104,7 +101,7 @@ public class Master{
                     if(temp.equalsIgnoreCase("")){
                         break;
                     }
-                    else if(temp.matches(".")){
+                    else{
                         filename = temp;
                         break;
                     }
@@ -114,6 +111,20 @@ public class Master{
                     temp = scanner.nextLine();
                     if(temp.matches("\\d+")){
                         iterations = Integer.parseInt(temp);
+                        break;
+                    }
+                    else if(temp.equalsIgnoreCase("")){
+                        break;
+                    }
+                    else{
+                        System.out.println("Invalid Data. Try Again");
+                    }
+                }
+                while(true){
+                    System.out.println("Please give k or press Enter/Return");
+                    temp = scanner.nextLine();
+                    if(temp.matches("\\d+")){
+                        k = Integer.parseInt(temp);
                         break;
                     }
                     else if(temp.equalsIgnoreCase("")){
@@ -206,6 +217,7 @@ public class Master{
         while(true){
             for(int i = 0; i < workers.size(); i++){
                 if(!workers.get(i).getSocket().isConnected()){
+                    System.out.println("Worker Disconnected!");
                     cores.remove(i);
                     ram.remove(i);
                     workers.remove(i);
@@ -270,7 +282,6 @@ public class Master{
      * The method that calculates how to distribute the matrices
      */
     private void calcStarts(int size) {
-
         // t and t1 contains the last element's indexes of U and I matrices, which has already elaborated from a worker.
         // so current worker elaborates only elements after indexes t and t1.
         int t = 0;
@@ -295,7 +306,7 @@ public class Master{
     /**
      * Matrices distribution
      */
-    public void dist() {
+    private void dist() {
         //Initializes all the needed metrics, such as score and matrices U, I for the start of the training
         trained = false;
         initUI();
@@ -370,39 +381,45 @@ public class Master{
      * It returns recommendation as an array of integer, which represent number of column of POIS.
      * Parameters row and col are the user position (if suppose that user is at a POI).
      * @param row the row needed
-     * @param col the column needed
+     * @param n the column needed
      * @return a list of pois
      */
-    private ArrayList<Integer> getRecommendation(int row, int col){
-
-        double[][] rec = U.getRowMatrix(row).transpose().multiply(I.getRowMatrix(col)).getData();
-        ArrayList<Double> values = new ArrayList<>();
-        ArrayList<Integer> recom = new ArrayList<>();
-        for(int i = row; i < row+rec.length; i++){
-            if(i < Bin.getRowDimension()) {
-                double max = 0;
-                int pos = 0;
-                for (int j = col; j < col + rec[i - row].length; j++) {
-                    if (j < Bin.getColumnDimension()) {
-                        if (rec[i - row][j - col] >= max && Bin.getEntry(i, j) == 0) {
-                            max = rec[i - row][j - col];
-                            pos = j;
-                        }
-                    }
-                }
-                if(!recom.contains(pos)) {
-                    values.add(max);
-                    recom.add(pos);
-                }
+    private ArrayList<Integer> getRecommendation(int row, int n){
+        RealMatrix trained = U.multiply(I.transpose());
+        double[][] user = trained.getRowMatrix(row).getData();
+        int[] pos = new int[user[0].length];
+        for(int i = 0; i < user[0].length; i++){
+            if(Bin.getEntry(row, i)>0){
+                user[0][i] = 0;
             }
+            pos[i] = i;
         }
-        return recom;
+        int size = user[0].length;
+        for (int i = 0; i < size-1; i++)
+        {
+            int min_idx = i;
+            for (int j = i+1; j < size; j++)
+                if (user[0][j] > user[0][min_idx])
+                    min_idx = j;
+            double temp = user[0][min_idx];
+            int temp2 = pos[min_idx];
+            user[0][min_idx] = user[0][i];
+            pos[min_idx] = pos[i];
+            user[0][i] = temp;
+            pos[i] = temp2;
+        }
+        ArrayList<Integer> rec = new ArrayList<Integer>();
+        for(int i = 0; i < n; i++){
+            rec.add(pos[i]);
+        }
+        return rec;
     }
 
     /**
      * @return Error after every iteration of training
      */
     private double getError(){
+
         double err = 0;
         for(int i = 0; i < sol; i++){
             for(int j = 0; j < sor; j++){
@@ -465,7 +482,15 @@ public class Master{
         try{
             // creates new work and bind it with its worker through socket.
             Work w = new Work(socket, out, in, "Stats");
-            workers.add(w);
+            while(true){
+                if(!trained){
+                    Thread.sleep(2000);
+                }
+                else{
+                    workers.add(w);
+                    break;
+                }
+            }
             w.start(); // read resources from worker
             w.join();
             cores.add(w.getCores());
@@ -477,7 +502,7 @@ public class Master{
     }
 
     /**
-     * Client WIP
+     * Client manager method
      */
     public void client(){
         try {
@@ -513,4 +538,5 @@ public class Master{
             }
         }
     }
+
 }
