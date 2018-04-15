@@ -76,7 +76,7 @@ public class Master{
      * Main method
      */
     public static void main(String[] args) {
-        new Master("D:/MGX/Desktop/DistributedSystemsProject/src/main/Test.csv", 10, 100, 0.01, 0.001, 4200).start();
+        new Master("D:/MGX/Desktop/DistributedSystemsProject/src/main/Dataset1_WZ.csv", 1, 100, 0.01, 0.001, 4200).start();
     }
 
     public void start(){
@@ -410,7 +410,7 @@ public class Master{
         }
         ArrayList<Integer> rec = new ArrayList<Integer>();
         for(int i = 0; i < n; i++){
-            rec.add(pos[i]);
+            if(user[0][i]!=0) rec.add(pos[i]);
         }
         return rec;
     }

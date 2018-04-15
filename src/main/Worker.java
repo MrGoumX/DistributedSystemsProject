@@ -33,9 +33,6 @@ public class Worker extends Thread{
     // start, finish = limits which specifies a limited area of U and I matrices to train this worker.
     private int sol, sor, k, start, finish;
 
-    // POIS matrix contains csv elements of each point of interest.
-    private RealMatrix POIS;
-
     // C matrix contains a score for each point.
     // Bin matrix contains 1 if a user has gone to a point, 0 otherwise.
     private OpenMapRealMatrix Bin, C;
