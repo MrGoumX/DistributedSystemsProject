@@ -88,6 +88,9 @@ public class Worker extends Thread{
             if(ctm && message.equalsIgnoreCase("Stats")){
                 sendStats(); // get ram-cores from class HWInfo and send them to master.
             }
+            else if(ctm && message.equalsIgnoreCase("BinC")){
+                receiveBinC();
+            }
             else if(ctm && (message.equalsIgnoreCase("TrainU") || message.equalsIgnoreCase("TrainI"))){
                 train(); // manage all trainings(except first) of U and I matrices.
             }
@@ -125,14 +128,25 @@ public class Worker extends Thread{
     }
 
     /**
+     * Receives matrices Bin & C from Master
+     */
+    private void receiveBinC() {
+        try{
+            Bin = (OpenMapRealMatrix) in.readObject();
+            C = (OpenMapRealMatrix) in.readObject();
+        }
+        catch (ClassNotFoundException | IOException e){
+            e.printStackTrace();
+        }
+    }
+
+    /**
      * The method that manages the training of the matrices after 1st initialization
      */
     private void train() {
         try {
             double[][] TU = (double[][]) in.readObject();
             double[][] TI = (double[][]) in.readObject();
-            Bin = (OpenMapRealMatrix) in.readObject();
-            C = (OpenMapRealMatrix) in.readObject();
             start = in.readInt();
             finish = in.readInt();
             k = in.readInt();
@@ -151,10 +165,6 @@ public class Worker extends Thread{
                 out.writeObject(I.getData());
                 out.flush();
             }
-            Bin = null;
-            C = null;
-            U = null;
-            I = null;
         }
         catch (IOException | ClassNotFoundException e){
             e.printStackTrace();

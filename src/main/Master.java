@@ -313,6 +313,11 @@ public class Master{
         calcDist(workers.size());
         calcStarts(workers.size());
 
+
+        for(int i = 0; i < workers.size(); i++){
+            workers.set(i, new Work(workers.get(i).getSocket(), workers.get(i).getOut(), workers.get(i).getIn(), "BinC", Bin, C));
+        }
+        startWork();
         for(int i = 0; i < iterations; i++){ // for each iteration of training
 
             int size = workers.size(); // so if connection list updated at the middle of an iteration, there isn't problem because still used old size.
@@ -322,13 +327,13 @@ public class Master{
             int bc = 0; // bc is the index of column of I to start elaboration of each worker.
 
             for(int j = 0; j < size; j++) { // for each worker
-                workers.set(j, new Work(workers.get(j).getSocket(), workers.get(j).getOut(), workers.get(j).getIn(), "TrainU", U, I, Bin, C, br, rowsf.get(j), k, lamda));
+                workers.set(j, new Work(workers.get(j).getSocket(), workers.get(j).getOut(), workers.get(j).getIn(), "TrainU", U, I, br, rowsf.get(j), k, lamda));
                 br = rowsf.get(j);
             }
             startWork();
             combineU();
             for(int j = 0; j < size; j++) {
-                workers.set(j, new Work(workers.get(j).getSocket(), workers.get(j).getOut(), workers.get(j).getIn(), "TrainI", U, I, Bin, C, bc, colsf.get(j), k, lamda));
+                workers.set(j, new Work(workers.get(j).getSocket(), workers.get(j).getOut(), workers.get(j).getIn(), "TrainI", U, I, bc, colsf.get(j), k, lamda));
                 bc = colsf.get(j);
             }
             startWork();

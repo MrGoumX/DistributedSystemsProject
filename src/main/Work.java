@@ -48,15 +48,22 @@ public class Work extends Thread{
         this.message = message;
     }
 
-    public Work(Socket socket, ObjectOutputStream out, ObjectInputStream in, String message, RealMatrix U, RealMatrix I, OpenMapRealMatrix Bin, OpenMapRealMatrix C, int start, int finish, int k, double lamda){
+    public Work(Socket socket, ObjectOutputStream out, ObjectInputStream in, String message, OpenMapRealMatrix Bin, OpenMapRealMatrix C){
+        this.socket = socket;
+        this.out = out;
+        this.in = in;
+        this.message = message;
+        this.Bin = Bin;
+        this.C = C;
+    }
+
+    public Work(Socket socket, ObjectOutputStream out, ObjectInputStream in, String message, RealMatrix U, RealMatrix I, int start, int finish, int k, double lamda){
         this.socket = socket;
         this.out = out;
         this.in = in;
         this.message = message;
         this.U = U;
         this.I = I;
-        this.Bin = Bin;
-        this.C = C;
         this.start = start;
         this.finish = finish;
         this.k = k;
@@ -70,6 +77,9 @@ public class Work extends Thread{
         if(message.equalsIgnoreCase("Stats")){
             getStats();
         }
+        else if(message.equalsIgnoreCase("BinC")){
+            sendBinC();
+        }
         else if(message.equalsIgnoreCase("TrainU") || message.equalsIgnoreCase("TrainI")){
             sendMatrices();
         }
@@ -77,6 +87,8 @@ public class Work extends Thread{
             close();
         }
     }
+
+
 
     /**
      * Receives from worker the PC specs of him
@@ -95,19 +107,30 @@ public class Work extends Thread{
     }
 
     /**
+     * Sends matrices Bin and C to Workers
+     */
+    private void sendBinC() {
+        try {
+            out.writeObject(message);
+            out.flush();
+            out.writeObject(Bin);
+            out.writeObject(C);
+            out.flush();
+        }
+        catch (IOException e){
+            e.printStackTrace();
+        }
+
+    }
+
+    /**
      * Sends matrices to worker after first initialization and take as result matrices U and I after training.
      */
     private void sendMatrices() {
         try {
             out.writeObject(message);
-            out.flush();
             out.writeObject(U.getData());
-            out.flush();
             out.writeObject(I.getData());
-            out.flush();
-            out.writeObject(Bin);
-            out.flush();
-            out.writeObject(C);
             out.flush();
             out.writeInt(start);
             out.writeInt(finish);
