@@ -201,7 +201,7 @@ public class Worker extends Thread{
             FS = FS.multiply(IT);
             FS = FS.multiply(temp);
             FS = FS.transpose();
-            FS = FS.multiply(Bin.getRowMatrix(i));
+            FS = FS.preMultiply(Bin.getRowMatrix(i));
             U.setRowMatrix(i, FS);
         }
     }
@@ -224,7 +224,7 @@ public class Worker extends Thread{
             FS = FS.multiply(UT);
             FS = FS.multiply(temp);
             FS = FS.transpose();
-            FS = FS.multiply(Bin.getColumnMatrix(i).transpose());
+            FS = FS.preMultiply(Bin.getColumnMatrix(i).transpose());
             I.setRowMatrix(i, FS);
         }
     }
