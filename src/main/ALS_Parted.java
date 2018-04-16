@@ -150,7 +150,7 @@ public class ALS_Parted {
         }
     }
 
-    private void trainU(int start, int finish){
+    private synchronized void trainU(int start, int finish){
 
 
         RealMatrix IT = I.transpose();
@@ -201,7 +201,7 @@ public class ALS_Parted {
         }
     }
 
-    private void trainI(int start, int finish){
+    private synchronized void trainI(int start, int finish){
         RealMatrix UT = U.transpose();
         for(int i = start; i < finish; i++) {
             double[] col = C.getColumn(i);
@@ -268,7 +268,7 @@ public class ALS_Parted {
 
     public static void main(String[] args) throws IOException{
 
-        String file = "C:/Users/Desktop/IdeaProjects/DistributedSystemsProject/src/main/Test.csv";
+        String file = "C:/Users/MrGoumX/Projects/DistributedSystemsProject/src/main/Dataset1_WZ.csv";
         double thres = 0.005, lamda = 0.01;
         ALS_Parted ALS = new ALS_Parted(file, lamda);
         ALS.initMatrices();
@@ -281,9 +281,11 @@ public class ALS_Parted {
         // rest iterations.
         // foor loop stops when complete all iterations or the difference of error of 2 iterations become less than 0.005.
         for(int i = 0; i < 2; i++){
-            ALS.tempU();
+            //ALS.tempU();
             //System.out.println(ALS.getU().toString());
-            ALS.tempI();
+            //ALS.tempI();
+            ALS.trainU(0, 200);
+            ALS.trainI(0, 200);
             System.out.println(ALS.getI().toString());
             prevError = currentError;
             currentError = ALS.getError();

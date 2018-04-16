@@ -151,6 +151,10 @@ public class Worker extends Thread{
                 out.writeObject(I.getData());
                 out.flush();
             }
+            Bin = null;
+            C = null;
+            U = null;
+            I = null;
         }
         catch (IOException | ClassNotFoundException e){
             e.printStackTrace();
@@ -190,6 +194,7 @@ public class Worker extends Thread{
         RealMatrix MI = IT.multiply(I);
         System.out.println("Rows range: " + start + " - " + finish);
         for(int i = start; i < finish; i++) {
+            System.out.println(i);
             RealMatrix temp = MatrixUtils.createRealDiagonalMatrix(C.getRow(i));
             temp = temp.subtract(ocm);
             FS = IT.multiply(temp);
@@ -213,6 +218,7 @@ public class Worker extends Thread{
         RealMatrix MU = UT.multiply(U);
         System.out.println("Columns range: " + start + " - " + finish);
         for(int i = start; i < finish; i++) {
+            System.out.println(i);
             RealMatrix temp = MatrixUtils.createRealDiagonalMatrix(C.getColumn(i));
             temp = temp.subtract(orm);
             FS = UT.multiply(temp);

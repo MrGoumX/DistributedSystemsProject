@@ -76,7 +76,7 @@ public class Master{
      * Main method
      */
     public static void main(String[] args) {
-        new Master("C:/Users/p3160026/Desktop/DistributedSystemsProject/src/main/Dataset1_WZ.csv", 5, 20, 0.01, 0.001, 4200).start();
+        new Master("C:/Users/MrGoumX/Projects/DistributedSystemsProject/src/main/Dataset1_WZ.csv", 5, 20, 0.1, 0.001, 4200).start();
     }
 
     public void start(){
@@ -236,12 +236,12 @@ public class Master{
         JDKRandomGenerator ran = new JDKRandomGenerator(1);
         for(int i = 0; i < U.getRowDimension(); i++){
             for(int j = 0; j < U.getColumnDimension(); j++){
-                U.setEntry(i, j, (Math.floor(ran.nextFloat()*100)/100));
+                U.setEntry(i, j, ran.nextDouble());
             }
         }
         for(int i = 0; i < I.getRowDimension(); i++){
             for(int j = 0; j < I.getColumnDimension(); j++){
-                I.setEntry(i,j, (Math.floor(ran.nextFloat()*100)/100));
+                I.setEntry(i,j, ran.nextDouble());
             }
         }
         U = U.scalarAdd(0.01);
@@ -419,21 +419,14 @@ public class Master{
      * @return Error after every iteration of training
      */
     private double getError(){
-
+        RealMatrix temp = U.multiply(I.transpose());
         double err = 0;
         for(int i = 0; i < sol; i++){
             for(int j = 0; j < sor; j++){
-                double[][] temp = (I.getRowMatrix(i).multiply(U.getRowMatrix(i).transpose())).getData();
-                double temp2 = Bin.getEntry(i,j)-temp[0][0];
-                temp2 = Math.pow(temp2, 2);
-                temp2 = temp2*C.getEntry(i,j);
-                err += temp2;
+                err += C.getEntry(i,j)*(pow((Bin.getEntry(i,j)-temp.getEntry(i,j)),2));
             }
         }
-        System.out.println(err);
-        double norm = lamda*(I.getFrobeniusNorm() + U.getFrobeniusNorm());
-        System.out.println(norm);
-        err -= norm;
+        err -= lamda*(I.getFrobeniusNorm() + U.getFrobeniusNorm());
         System.out.println(err);
         return err;
     }
