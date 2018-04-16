@@ -191,15 +191,17 @@ public class Worker extends Thread{
         System.out.println("Rows range: " + start + " - " + finish);
         for(int i = start; i < finish; i++) {
             RealMatrix temp = MatrixUtils.createRealDiagonalMatrix(C.getRow(i));
-            FS = IT.multiply(temp.subtract(ocm));
+            temp = temp.subtract(ocm);
+            FS = IT.multiply(temp);
             FS = FS.multiply(I);
             FS = FS.add(MI);
-            FS = FS.add(ncm.scalarMultiply(lamda));
+            RealMatrix temp2 = ncm.scalarMultiply(lamda);
+            FS = FS.add(temp2);
             FS = new QRDecomposition(FS).getSolver().getInverse();
             FS = FS.multiply(IT);
             FS = FS.multiply(temp);
             FS = FS.transpose();
-            FS = FS.preMultiply(Bin.getRowMatrix(i));
+            FS = FS.multiply(Bin.getRowMatrix(i));
             U.setRowMatrix(i, FS);
         }
     }
@@ -212,15 +214,17 @@ public class Worker extends Thread{
         System.out.println("Columns range: " + start + " - " + finish);
         for(int i = start; i < finish; i++) {
             RealMatrix temp = MatrixUtils.createRealDiagonalMatrix(C.getColumn(i));
-            FS = UT.multiply(temp.subtract(orm));
+            temp = temp.subtract(orm);
+            FS = UT.multiply(temp);
             FS = FS.multiply(U);
             FS = FS.add(MU);
-            FS = FS.add( ncm.scalarMultiply(lamda));
+            RealMatrix temp2 = ncm.scalarMultiply(lamda);
+            FS = FS.add(temp2);
             FS = new QRDecomposition(FS).getSolver().getInverse();
             FS = FS.multiply(UT);
             FS = FS.multiply(temp);
             FS = FS.transpose();
-            FS = FS.preMultiply(Bin.getColumnMatrix(i).transpose());
+            FS = FS.multiply(Bin.getColumnMatrix(i).transpose());
             I.setRowMatrix(i, FS);
         }
     }
@@ -229,6 +233,6 @@ public class Worker extends Thread{
      * Main method
      */
     public static void main(String[] args) {
-        new Worker("127.0.0.1", 4200).start();
+        new Worker("172.16.1.71", 4200).start();
     }
 }

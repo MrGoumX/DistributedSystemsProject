@@ -76,7 +76,7 @@ public class Master{
      * Main method
      */
     public static void main(String[] args) {
-        new Master("D:/MGX/Desktop/DistributedSystemsProject/src/main/Dataset1_WZ.csv", 1, 100, 0.01, 0.001, 4200).start();
+        new Master("C:/Users/p3160026/Desktop/DistributedSystemsProject/src/main/Dataset1_WZ.csv", 5, 20, 0.01, 0.001, 4200).start();
     }
 
     public void start(){
@@ -424,10 +424,17 @@ public class Master{
         for(int i = 0; i < sol; i++){
             for(int j = 0; j < sor; j++){
                 double[][] temp = (I.getRowMatrix(i).multiply(U.getRowMatrix(i).transpose())).getData();
-                err += C.getEntry(i,j)*(pow((Bin.getEntry(i,j)-temp[0][0]),2));
+                double temp2 = Bin.getEntry(i,j)-temp[0][0];
+                temp2 = Math.pow(temp2, 2);
+                temp2 = temp2*C.getEntry(i,j);
+                err += temp2;
             }
         }
-        err -= lamda*(I.getFrobeniusNorm() + U.getFrobeniusNorm());
+        System.out.println(err);
+        double norm = lamda*(I.getFrobeniusNorm() + U.getFrobeniusNorm());
+        System.out.println(norm);
+        err -= norm;
+        System.out.println(err);
         return err;
     }
 
