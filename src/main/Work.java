@@ -102,9 +102,13 @@ public class Work extends Thread{
             out.writeObject(message);
             out.flush();
             out.writeObject(U.getData());
+            out.flush();
             out.writeObject(I.getData());
+            out.flush();
             out.writeObject(Bin);
+            out.flush();
             out.writeObject(C);
+            out.flush();
             out.writeInt(start);
             out.writeInt(finish);
             out.writeInt(k);

@@ -194,14 +194,11 @@ public class Worker extends Thread{
         RealMatrix MI = IT.multiply(I);
         System.out.println("Rows range: " + start + " - " + finish);
         for(int i = start; i < finish; i++) {
-            System.out.println(i);
             RealMatrix temp = MatrixUtils.createRealDiagonalMatrix(C.getRow(i));
-            temp = temp.subtract(ocm);
-            FS = IT.multiply(temp);
+            FS = IT.multiply(temp.subtract(ocm));
             FS = FS.multiply(I);
             FS = FS.add(MI);
-            RealMatrix temp2 = ncm.scalarMultiply(lamda);
-            FS = FS.add(temp2);
+            FS = FS.add(ncm.scalarMultiply(lamda));
             FS = new QRDecomposition(FS).getSolver().getInverse();
             FS = FS.multiply(IT);
             FS = FS.multiply(temp);
@@ -218,14 +215,11 @@ public class Worker extends Thread{
         RealMatrix MU = UT.multiply(U);
         System.out.println("Columns range: " + start + " - " + finish);
         for(int i = start; i < finish; i++) {
-            System.out.println(i);
             RealMatrix temp = MatrixUtils.createRealDiagonalMatrix(C.getColumn(i));
-            temp = temp.subtract(orm);
-            FS = UT.multiply(temp);
+            FS = UT.multiply(temp.subtract(orm));
             FS = FS.multiply(U);
             FS = FS.add(MU);
-            RealMatrix temp2 = ncm.scalarMultiply(lamda);
-            FS = FS.add(temp2);
+            FS = FS.add(ncm.scalarMultiply(lamda));
             FS = new QRDecomposition(FS).getSolver().getInverse();
             FS = FS.multiply(UT);
             FS = FS.multiply(temp);

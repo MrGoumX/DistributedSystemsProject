@@ -52,7 +52,7 @@ public class Master{
     private int sol, sor, k, rr, rc;
 
     // U, I are User and Items(POIS) matrices.
-    private RealMatrix U, I;
+    private RealMatrix U, I, tUI;
 
     private List<String[]> lines = new ArrayList<>(); // list lines used to read POIS matrix from .csv file.
 
@@ -76,7 +76,7 @@ public class Master{
      * Main method
      */
     public static void main(String[] args) {
-        new Master("C:/Users/MrGoumX/Projects/DistributedSystemsProject/src/main/Dataset1_WZ.csv", 5, 20, 0.1, 0.001, 4200).start();
+        new Master("D:/MGX/Desktop/DistributedSystemsProject/src/main/Dataset1_WZ.csv", 20, 20, 0.1, 0.05, 4200).start();
     }
 
     public void start(){
@@ -341,8 +341,10 @@ public class Master{
                 currError = getError();
                 if(prevError - currError< thres) break;
             }
+            System.out.println("Trained with error: " + currError);
         }
         trained = true;
+        tUI = U.multiply(I.transpose());
         System.out.println("Matrices are finished training");
     }
 
@@ -385,8 +387,7 @@ public class Master{
      * @return a list of pois
      */
     private ArrayList<Integer> getRecommendation(int row, int n){
-        RealMatrix trained = U.multiply(I.transpose());
-        double[][] user = trained.getRowMatrix(row).getData();
+        double[][] user = tUI.getRowMatrix(row).getData();
         int[] pos = new int[user[0].length];
         for(int i = 0; i < user[0].length; i++){
             if(Bin.getEntry(row, i)>0){
@@ -419,11 +420,10 @@ public class Master{
      * @return Error after every iteration of training
      */
     private double getError(){
-        RealMatrix temp = U.multiply(I.transpose());
         double err = 0;
         for(int i = 0; i < sol; i++){
             for(int j = 0; j < sor; j++){
-                err += C.getEntry(i,j)*(pow((Bin.getEntry(i,j)-temp.getEntry(i,j)),2));
+                err += C.getEntry(i,j)*(pow((Bin.getEntry(i,j)-tUI.getEntry(i,j)),2));
             }
         }
         err -= lamda*(I.getFrobeniusNorm() + U.getFrobeniusNorm());
