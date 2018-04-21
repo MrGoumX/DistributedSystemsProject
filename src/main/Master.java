@@ -76,7 +76,7 @@ public class Master{
      * Main method
      */
     public static void main(String[] args) {
-        new Master("C:/Users/MrGoumX/Projects/DistributedSystemsProject/src/main/Dataset1_WZ.csv", 5, 20, 0.1, 0.05, 4200).start();
+        new Master("D:/MGX/Documents/IdeaProjects/DistributedSystemsProject/src/main/Dataset1_WZ.csv", 5, 20, 0.1, 0.05, 4200).start();
     }
 
     public void start(){

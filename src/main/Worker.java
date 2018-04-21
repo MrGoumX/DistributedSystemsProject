@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.stream.IntStream;
 
 import static java.lang.System.exit;
 
@@ -40,7 +41,7 @@ public class Worker extends Thread{
     // U, I are User and Items(POIS) matrices.
     // orm, ocm, ncm are diagonal matrices with 1 value at diagonal.
     // FS is a temporary matrix for training U and I.
-    private RealMatrix U, I, orm, ocm, ncm, FS;
+    private RealMatrix U, I, orm, ocm, ncm;
 
     private double lamda; // lamda is L factor
 
@@ -157,11 +158,11 @@ public class Worker extends Thread{
             sor = Bin.getColumnDimension();
             initMatrices();
             if (message.equalsIgnoreCase("TrainU")) {
-                trainU(start, finish);
+                initU(start, finish);
                 out.writeObject(U.getData());
                 out.flush();
             } else if (message.equalsIgnoreCase("TrainI")) {
-                trainI(start, finish);
+                initI(start, finish);
                 out.writeObject(I.getData());
                 out.flush();
             }
@@ -196,47 +197,52 @@ public class Worker extends Thread{
         ncm = MatrixUtils.createRealDiagonalMatrix(nc);
     }
 
+    private void initU(int start, int finish){
+        System.out.println("Rows: " + start + "-" + finish);
+        RealMatrix IT = I.transpose();
+        RealMatrix MI = IT.multiply(I);
+        IntStream.range(start, finish).parallel().forEach(i -> trainU(i, IT, MI));
+    }
+
     /**
      * The method that trains the Users matrix based on the POI matrix
      */
-    private void trainU(int start, int finish){
-        RealMatrix IT = I.transpose();
-        RealMatrix MI = IT.multiply(I);
-        System.out.println("Rows range: " + start + " - " + finish);
-        for(int i = start; i < finish; i++) {
-            RealMatrix temp = MatrixUtils.createRealDiagonalMatrix(C.getRow(i));
-            FS = IT.multiply(temp.subtract(ocm));
-            FS = FS.multiply(I);
-            FS = FS.add(MI);
-            FS = FS.add(ncm.scalarMultiply(lamda));
-            FS = new QRDecomposition(FS).getSolver().getInverse();
-            FS = FS.multiply(IT);
-            FS = FS.multiply(temp);
-            FS = FS.transpose();
-            FS = FS.preMultiply(Bin.getRowMatrix(i));
-            U.setRowMatrix(i, FS);
-        }
+    private void trainU(int i, RealMatrix IT, RealMatrix MI){
+        RealMatrix temp = MatrixUtils.createRealDiagonalMatrix(C.getRow(i));
+        RealMatrix FS = IT.multiply(temp.subtract(ocm));
+        FS = FS.multiply(I);
+        FS = FS.add(MI);
+        FS = FS.add(ncm.scalarMultiply(lamda));
+        FS = new QRDecomposition(FS).getSolver().getInverse();
+        FS = FS.multiply(IT);
+        FS = FS.multiply(temp);
+        FS = FS.transpose();
+        FS = FS.preMultiply(Bin.getRowMatrix(i));
+        U.setRowMatrix(i, FS);
     }
+
+    private void initI(int start, int finish){
+        System.out.println("Columns: " + start + "-" + finish);
+        RealMatrix UT = U.transpose();
+        RealMatrix MU = UT.multiply(U);
+        IntStream.range(start, finish).parallel().forEach(i -> trainI(i, UT, MU));
+    }
+
     /**
      * The method that trains the POI matrix based on the Users matrix
      */
-    private void trainI(int start, int finish) {
-        RealMatrix UT = U.transpose();
-        RealMatrix MU = UT.multiply(U);
-        System.out.println("Columns range: " + start + " - " + finish);
-        for(int i = start; i < finish; i++) {
-            RealMatrix temp = MatrixUtils.createRealDiagonalMatrix(C.getColumn(i));
-            FS = UT.multiply(temp.subtract(orm));
-            FS = FS.multiply(U);
-            FS = FS.add(MU);
-            FS = FS.add(ncm.scalarMultiply(lamda));
-            FS = new QRDecomposition(FS).getSolver().getInverse();
-            FS = FS.multiply(UT);
-            FS = FS.multiply(temp);
-            FS = FS.transpose();
-            FS = FS.preMultiply(Bin.getColumnMatrix(i).transpose());
-            I.setRowMatrix(i, FS);
-        }
+    private void trainI(int i, RealMatrix UT, RealMatrix MU){
+        RealMatrix temp = MatrixUtils.createRealDiagonalMatrix(C.getColumn(i));
+        RealMatrix FS = UT.multiply(temp.subtract(orm));
+        FS = FS.multiply(U);
+        FS = FS.add(MU);
+        FS = FS.add(ncm.scalarMultiply(lamda));
+        FS = new QRDecomposition(FS).getSolver().getInverse();
+        FS = FS.multiply(UT);
+        FS = FS.multiply(temp);
+        FS = FS.transpose();
+        FS = FS.preMultiply(Bin.getColumnMatrix(i).transpose());
+        I.setRowMatrix(i, FS);
     }
 
     /**
