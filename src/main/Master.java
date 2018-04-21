@@ -10,6 +10,7 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
+import java.util.stream.IntStream;
 
 import static java.lang.StrictMath.pow;
 import static java.lang.System.exit;
@@ -313,7 +314,6 @@ public class Master{
         calcDist(workers.size());
         calcStarts(workers.size());
 
-
         for(int i = 0; i < workers.size(); i++){
             workers.set(i, new Work(workers.get(i).getSocket(), workers.get(i).getOut(), workers.get(i).getIn(), "BinC", Bin, C));
         }
@@ -361,9 +361,7 @@ public class Master{
         for(int i = 0; i < workers.size(); i++){
             double [][] temp = workers.get(i).getU();
             RealMatrix TU = MatrixUtils.createRealMatrix(temp);
-            for(int j = br; j < rowsf.get(i); j++){
-                U.setRowMatrix(j, TU.getRowMatrix(j));
-            }
+            IntStream.range(br, rowsf.get(i)).parallel().forEach(j -> U.setRowMatrix(j, TU.getRowMatrix(j)));
             br = rowsf.get(i);
         }
     }
@@ -376,9 +374,7 @@ public class Master{
         for(int i = 0; i < workers.size(); i++){
             double[][] temp = workers.get(i).getI();
             RealMatrix TI = MatrixUtils.createRealMatrix(temp);
-            for(int j = bc; j < colsf.get(i); j++){
-                I.setRowMatrix(j, TI.getRowMatrix(j));
-            }
+            IntStream.range(bc, colsf.get(i)).parallel().forEach(j -> I.setRowMatrix(j, TI.getRowMatrix(j)));
             bc = colsf.get(i);
         }
     }

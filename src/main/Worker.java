@@ -8,7 +8,9 @@ import org.apache.commons.math3.linear.RealMatrix;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.lang.reflect.Array;
 import java.net.Socket;
+import java.util.Arrays;
 import java.util.stream.IntStream;
 
 import static java.lang.System.exit;
@@ -181,15 +183,9 @@ public class Worker extends Thread{
         double[] oc = new double[sor];
         double[] nc = new double[k];
 
-        for(int i = 0; i < or.length; i++){
-            or[i] = 1;
-        }
-        for(int i = 0; i < oc.length; i++){
-            oc[i] = 1;
-        }
-        for(int i = 0; i < nc.length; i++){
-            nc[i] = 1;
-        }
+        Arrays.fill(or, 1);
+        Arrays.fill(oc, 1);
+        Arrays.fill(nc, 1);
 
         // matrices orm, ocm, ncm are diagonal matrices with 1 values at diagonal.
         orm = MatrixUtils.createRealDiagonalMatrix(or);
