@@ -428,7 +428,6 @@ public class Master{
             }
         }
         err -= lamda*(I.getFrobeniusNorm() + U.getFrobeniusNorm());
-        System.out.println(err);
         return err;
     }
 
