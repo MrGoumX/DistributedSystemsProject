@@ -243,6 +243,6 @@ public class Worker extends Thread{
      * Main method
      */
     public static void main(String[] args) {
-        new Worker("172.16.1.71", 4200).start();
+        new Worker("127.0.0.1", 4200).start();
     }
 }

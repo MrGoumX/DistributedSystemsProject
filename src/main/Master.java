@@ -76,7 +76,7 @@ public class Master{
      * Main method
      */
     public static void main(String[] args) {
-        new Master("D:/MGX/Desktop/DistributedSystemsProject/src/main/Dataset1_WZ.csv", 20, 20, 0.1, 0.05, 4200).start();
+        new Master("C:/Users/MrGoumX/Projects/DistributedSystemsProject/src/main/Dataset1_WZ.csv", 5, 20, 0.1, 0.05, 4200).start();
     }
 
     public void start(){
@@ -338,6 +338,7 @@ public class Master{
             }
             startWork();
             combineI();
+            tUI = U.multiply(I.transpose());
             if(i==0){
                 prevError = currError = getError();
             }
@@ -349,7 +350,6 @@ public class Master{
             System.out.println("Trained with error: " + currError);
         }
         trained = true;
-        tUI = U.multiply(I.transpose());
         System.out.println("Matrices are finished training");
     }
 
