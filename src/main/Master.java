@@ -77,7 +77,7 @@ public class Master{
      * Main method
      */
     public static void main(String[] args) {
-        new Master("D:/MGX/Documents/IdeaProjects/DistributedSystemsProject/src/main/Dataset1_WZ.csv", 5, 20, 0.1, 0.05, 4200).start();
+        new Master("C:/Users/MrGoumX/Projects/DistributedSystemsProject/src/main/Dataset1_WZ.csv", 1, 20, 0.1, 0.5, 4200).start();
     }
 
     public void start(){
@@ -392,7 +392,7 @@ public class Master{
         int[] pos = new int[user[0].length];
         for(int i = 0; i < user[0].length; i++){
             if(Bin.getEntry(row, i)>0){
-                user[0][i] = 0;
+                user[0][i] = Double.NEGATIVE_INFINITY;
             }
             pos[i] = i;
         }
@@ -412,7 +412,7 @@ public class Master{
         }
         ArrayList<Integer> rec = new ArrayList<Integer>();
         for(int i = 0; i < n; i++){
-            if(user[0][i]!=0) rec.add(pos[i]);
+            if(user[0][i]!=Double.NEGATIVE_INFINITY) rec.add(pos[i]);
         }
         return rec;
     }
