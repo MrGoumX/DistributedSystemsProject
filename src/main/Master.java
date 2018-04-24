@@ -10,6 +10,7 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
+import java.util.stream.IntStream;
 
 import static java.lang.StrictMath.pow;
 import static java.lang.System.exit;
@@ -76,7 +77,7 @@ public class Master{
      * Main method
      */
     public static void main(String[] args) {
-        new Master("C:/Users/MrGoumX/Projects/DistributedSystemsProject/src/main/Dataset1_WZ.csv", 5, 20, 0.1, 0.05, 4200).start();
+        new Master("C:/Users/MrGoumX/Projects/DistributedSystemsProject/src/main/Dataset1_WZ.csv", 1, 20, 0.1, 0.5, 4200).start();
     }
 
     public void start(){
@@ -313,7 +314,6 @@ public class Master{
         calcDist(workers.size());
         calcStarts(workers.size());
 
-
         for(int i = 0; i < workers.size(); i++){
             workers.set(i, new Work(workers.get(i).getSocket(), workers.get(i).getOut(), workers.get(i).getIn(), "BinC", Bin, C));
         }
@@ -361,9 +361,7 @@ public class Master{
         for(int i = 0; i < workers.size(); i++){
             double [][] temp = workers.get(i).getU();
             RealMatrix TU = MatrixUtils.createRealMatrix(temp);
-            for(int j = br; j < rowsf.get(i); j++){
-                U.setRowMatrix(j, TU.getRowMatrix(j));
-            }
+            IntStream.range(br, rowsf.get(i)).parallel().forEach(j -> U.setRowMatrix(j, TU.getRowMatrix(j)));
             br = rowsf.get(i);
         }
     }
@@ -376,9 +374,7 @@ public class Master{
         for(int i = 0; i < workers.size(); i++){
             double[][] temp = workers.get(i).getI();
             RealMatrix TI = MatrixUtils.createRealMatrix(temp);
-            for(int j = bc; j < colsf.get(i); j++){
-                I.setRowMatrix(j, TI.getRowMatrix(j));
-            }
+            IntStream.range(bc, colsf.get(i)).parallel().forEach(j -> I.setRowMatrix(j, TI.getRowMatrix(j)));
             bc = colsf.get(i);
         }
     }
@@ -396,7 +392,7 @@ public class Master{
         int[] pos = new int[user[0].length];
         for(int i = 0; i < user[0].length; i++){
             if(Bin.getEntry(row, i)>0){
-                user[0][i] = 0;
+                user[0][i] = Double.NEGATIVE_INFINITY;
             }
             pos[i] = i;
         }
@@ -416,7 +412,7 @@ public class Master{
         }
         ArrayList<Integer> rec = new ArrayList<Integer>();
         for(int i = 0; i < n; i++){
-            if(user[0][i]!=0) rec.add(pos[i]);
+            if(user[0][i]!=Double.NEGATIVE_INFINITY) rec.add(pos[i]);
         }
         return rec;
     }
@@ -432,7 +428,6 @@ public class Master{
             }
         }
         err -= lamda*(I.getFrobeniusNorm() + U.getFrobeniusNorm());
-        System.out.println(err);
         return err;
     }
 
