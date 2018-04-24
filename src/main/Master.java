@@ -71,13 +71,15 @@ public class Master{
         this.sor = sor;
     }
 
+
+
     /**
      *  method
      */
     public static void main(String[] args) {
-        String filename = "input_matrix_no_zeros.csv" ;
+        String filename = "Data.csv" ;
         String path = Master.class.getProtectionDomain().getCodeSource().getLocation().getPath() + "main" + File.separator + filename ;
-        new Master(path, 1, 20, 0.1, 0.5, 4200, 765, 1964).start();
+        new Master(path, 1, 20, 0.1, 0.5, 4200, -1, -1).start();
     }
 
     public void start(){
@@ -491,14 +493,12 @@ public class Master{
                 // create and initialize a C matrix.
                 C = new OpenMapRealMatrix(sol, sor);
 
-                int size = 0;
                 while ((line = br.readLine()) != null) {
-                    lines.add(line.split(", ")); // lines is a list of arrays. Each String array contains csv values for one line.
-                    int user = Integer.parseInt(lines.get(size)[0]);
-                    int poi = Integer.parseInt(lines.get(size)[1]);
-                    POIS.setEntry(user, poi, Integer.parseInt(lines.get(size)[2]));
+                    String[] data = (line.split(", ")); // lines is a list of arrays. Each String array contains csv values for one line.
+                    int user = Integer.parseInt(data[0]);
+                    int poi = Integer.parseInt(data[1]);
+                    POIS.setEntry(user, poi, Integer.parseInt(data[2]));
                     Bin.setEntry(user, poi, 1);
-                    ++size;
                 }
 
             }

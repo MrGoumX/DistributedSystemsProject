@@ -8,8 +8,9 @@ import org.apache.commons.math3.linear.RealMatrix;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.lang.reflect.Array;
+import java.lang.management.ManagementFactory;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.IntStream;
 
@@ -121,7 +122,7 @@ public class Worker extends Thread{
      */
     private void sendStats(){
         try{
-            out.writeObject(HWInfo.getInfo());
+            out.writeObject(getStats());
             out.flush();
             System.out.println("Sent Stats");
         }
@@ -241,6 +242,12 @@ public class Worker extends Thread{
         I.setRowMatrix(i, FS);
     }
 
+    private ArrayList<String> getStats(){
+        ArrayList<String> stats = new ArrayList<>();
+        stats.add(String.valueOf(Runtime.getRuntime().availableProcessors()));
+        stats.add(String.valueOf(((com.sun.management.OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean()).getTotalPhysicalMemorySize()));
+        return stats;
+    }
     /**
      * Main method
      */
