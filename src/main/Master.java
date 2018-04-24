@@ -20,7 +20,6 @@ public class Master{
     private Scanner scanner = new Scanner(System.in); // Scanner for user input
     private ObjectOutputStream out = null; // Output stream for socket management
     private ObjectInputStream in = null; // Input stream for socket management
-    private ServerSocket server = null; // ServerSocket for server management
     private Socket socket = null; // Socket for server management
     private ArrayList<Work> workers = new ArrayList<>(); // connections is a list with Works, each work used by specific worker.
     private ArrayList<Integer> scores = new ArrayList<>(); // list score contains a score about each worker based on number of CPU cores and GB of RAM, so master can distribute properly the work to workers.
@@ -28,17 +27,14 @@ public class Master{
     private ArrayList<Integer> colsf = new ArrayList<>(); // colsf is a list that contains the limits of columns for each worker to elaborate.
     private ArrayList<Integer> cores = new ArrayList<>(); // cores is a list that contains the CPU cores of each worker as a number
     private ArrayList<Long> ram = new ArrayList<>(); // ram is a list that contains the RAM of each worker as a number
-    private Thread serverThread, checkingThread = null;
 
-    // port is the port in which server waits for clients.
-    // iterations represents how many times U and I matrices should be trained.
     private boolean trained = true;
-    private final int port;
-    private int iterations;
-    private String filename, ans, temp; // filename represents path to .csv file, which contains POIS matrix in a specific format.
+    private final int port; // port is the port in which server waits for clients.
+    private int iterations;    // iterations represents how many times U and I matrices should be trained.
+    private String filename; // filename represents path to .csv file, which contains POIS matrix in a specific format.
 
     // lambda is L factor.
-    private double thres, lamda, prevError, currError;
+    private double thres, lamda, currError;
 
     // POIS matrix contains csv elements of each point of interest.
     // C matrix contains a score for each point.
@@ -64,23 +60,29 @@ public class Master{
      * @param lamda The L factor for the training of the U and I
      * @param thres The error threshold needed to stop the training of U and I
      */
-    Master(String filename, int iterations, int k, double lamda, double thres, int port){
+    Master(String filename, int iterations, int k, double lamda, double thres, int port, int sol, int sor){
         this.filename = filename;
         this.iterations = iterations;
         this.k = k;
         this.lamda = lamda;
         this.thres = thres;
         this.port = port;
+        this.sol = sol;
+        this.sor = sor;
     }
 
     /**
-     * Main method
+     *  method
      */
     public static void main(String[] args) {
-        new Master("C:/Users/MrGoumX/Projects/DistributedSystemsProject/src/main/Dataset1_WZ.csv", 1, 20, 0.1, 0.5, 4200).start();
+        String filename = "input_matrix_no_zeros.csv" ;
+        String path = Master.class.getProtectionDomain().getCodeSource().getLocation().getPath() + "main" + File.separator + filename ;
+        new Master(path, 1, 20, 0.1, 0.5, 4200, 765, 1964).start();
     }
 
     public void start(){
+
+        // desplay menu.
         while(true){
             System.out.println("Please select an option");
             System.out.println("1. Open Server");
@@ -88,18 +90,23 @@ public class Master{
             System.out.println("3. Train with workers");
             System.out.println("4. Close Client connections");
             System.out.println("0. Exit");
-            ans = scanner.nextLine();
-            if(ans.equalsIgnoreCase("1")){
-                serverThread = new Thread(() -> startServer());
+
+            String ans = scanner.nextLine(); // read option.
+
+            // open server.
+            if(ans.equals("1")){
+                Thread serverThread = new Thread(() -> startServer());
                 serverThread.start();
-                checkingThread = new Thread(() -> checkConnections());
+                Thread checkingThread = new Thread(() -> checkConnections());
                 checkingThread.start();
             }
-            else if(ans.equalsIgnoreCase("2")){
+            // change settings.
+            else if(ans.equals("2")){
+                String temp;
                 while(true){
                     System.out.println("Please give new source csv file as string. If you don't want to change press Enter/Return");
                     temp = scanner.nextLine();
-                    if(temp.equalsIgnoreCase("")){
+                    if(temp.equals("")){
                         break;
                     }
                     else{
@@ -114,7 +121,7 @@ public class Master{
                         iterations = Integer.parseInt(temp);
                         break;
                     }
-                    else if(temp.equalsIgnoreCase("")){
+                    else if(temp.equals("")){
                         break;
                     }
                     else{
@@ -142,7 +149,7 @@ public class Master{
                         lamda = Double.parseDouble(temp);
                         break;
                     }
-                    else if(temp.equalsIgnoreCase("")){
+                    else if(temp.equals("")){
                         break;
                     }
                     else{
@@ -156,7 +163,7 @@ public class Master{
                         thres = Double.parseDouble(temp);
                         break;
                     }
-                    else if(temp.equalsIgnoreCase("")){
+                    else if(temp.equals("")){
                         break;
                     }
                     else{
@@ -164,13 +171,16 @@ public class Master{
                     }
                 }
             }
-            else if(ans.equalsIgnoreCase("3")){
+            // train workers.
+            else if(ans.equals("3")){
                 dist();
             }
-            else if(ans.equalsIgnoreCase("4")){
+            // close client connection.
+            else if(ans.equals("4")){
                 trained = false;
             }
-            else if(ans.equalsIgnoreCase("0")){
+            // exit.
+            else if(ans.equals("0")){
                 for(int i = 0; i < workers.size(); i++){
                     workers.set(i, new Work(workers.get(i).getSocket(), workers.get(i).getOut(), workers.get(i).getIn(), "Close"));
                 }
@@ -189,7 +199,7 @@ public class Master{
      */
     private void startServer(){
         try {
-            server = new ServerSocket(port);
+            ServerSocket server = new ServerSocket(port);
             while (true) {
                 socket = server.accept();
                 out = new ObjectOutputStream(socket.getOutputStream());
@@ -339,6 +349,8 @@ public class Master{
             startWork();
             combineI();
             tUI = U.multiply(I.transpose());
+
+            double prevError;
             if(i==0){
                 prevError = currError = getError();
             }
@@ -410,7 +422,7 @@ public class Master{
             user[0][i] = temp;
             pos[i] = temp2;
         }
-        ArrayList<Integer> rec = new ArrayList<Integer>();
+        ArrayList<Integer> rec = new ArrayList<>();
         for(int i = 0; i < n; i++){
             if(user[0][i]!=Double.NEGATIVE_INFINITY) rec.add(pos[i]);
         }
@@ -438,33 +450,61 @@ public class Master{
         try {
             String line; // line stores temporary each line of .csv file.
             BufferedReader br = new BufferedReader(new FileReader(filename));
-            while ((line = br.readLine()) != null) {
-                lines.add(line.split(";")); // lines is a list of arrays. Each String array contains csv values for one line.
-            }
 
-            sol = lines.size();
-            sor = lines.get(0).length;
-
-            // create and initialize a POIS matrix, which contains csv elements of each point of interest.
-            POIS = new OpenMapRealMatrix(sol, sor);
-            for (int i = 0; i < sol; i++) {
-                for (int j = 0; j < sor; j++) {
-                    POIS.setEntry(i, j, Integer.parseInt(lines.get(i)[j]));
+            if (sol < 0 || sor < 0) {
+                int max_user = -1;
+                int max_poi = -1;
+                int size = 0;
+                while ((line = br.readLine()) != null) {
+                    lines.add(line.split(", ")); // lines is a list of arrays. Each String array contains csv values for one line.
+                    int user = Integer.parseInt(lines.get(size)[0]);
+                    int poi = Integer.parseInt(lines.get(size)[1]);
+                    if (max_user < user) max_user = user;
+                    if (max_poi < poi) max_poi = poi;
+                    ++size;
                 }
-            }
 
-            // create and initialize a Bin matrix.
-            Bin = new OpenMapRealMatrix(sol, sor);
-            for (int i = 0; i < sol; i++) {
-                for (int j = 0; j < sor; j++) {
-                    Bin.setEntry(i, j, (POIS.getEntry(i, j) > 0) ? 1 : 0);
+                sol = max_user + 1;
+                sor = max_poi + 1;
+
+                // create and initialize a POIS matrix, which contains csv elements of each point of interest.
+                POIS = new OpenMapRealMatrix(sol, sor);
+                // create and initialize a Bin matrix.
+                Bin = new OpenMapRealMatrix(sol, sor);
+                // create and initialize a C matrix.
+                C = new OpenMapRealMatrix(sol, sor);
+
+                --size;
+                for (; size >= 0; --size) {
+                    int user = Integer.parseInt(lines.get(size)[0]);
+                    int poi = Integer.parseInt(lines.get(size)[1]);
+                    POIS.setEntry(user, poi, Integer.parseInt(lines.get(size)[2]));
+                    Bin.setEntry(user, poi, 1);
+
                 }
+            }else{
+
+                // create and initialize a POIS matrix, which contains csv elements of each point of interest.
+                POIS = new OpenMapRealMatrix(sol, sor);
+                // create and initialize a Bin matrix.
+                Bin = new OpenMapRealMatrix(sol, sor);
+                // create and initialize a C matrix.
+                C = new OpenMapRealMatrix(sol, sor);
+
+                int size = 0;
+                while ((line = br.readLine()) != null) {
+                    lines.add(line.split(", ")); // lines is a list of arrays. Each String array contains csv values for one line.
+                    int user = Integer.parseInt(lines.get(size)[0]);
+                    int poi = Integer.parseInt(lines.get(size)[1]);
+                    POIS.setEntry(user, poi, Integer.parseInt(lines.get(size)[2]));
+                    Bin.setEntry(user, poi, 1);
+                    ++size;
+                }
+
             }
 
-            // create and initialize a C matrix.
-            C = new OpenMapRealMatrix(sol, sor);
-            for (int i = 0; i < sol; i++) {
-                for (int j = 0; j < sor; j++) {
+            for (int i=0; i<sol; i++){
+                for(int j=0; j<sor; j++){
                     C.setEntry(i, j, 1 + 40 * POIS.getEntry(i, j));
                 }
             }
