@@ -1,4 +1,3 @@
-//TODO: CLEAN UP ALL DATA AFTER TRAINING DUE TO RAM ISSUES!!!
 package main;
 
 import org.apache.commons.math3.linear.MatrixUtils;
