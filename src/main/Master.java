@@ -282,11 +282,8 @@ public class Master{
 
         for(int j = 0; j < size; j++) { // for each worker j
             double give = (float)scores.get(j)/total;
-            System.out.println(give);
             int gr = (int)Math.round(give*sol);
             int gc = (int)Math.round(give*sor);
-            System.out.println("Rows = " + gr);
-            System.out.println("Columns = " + gc);
             int rows = t + gr; // start to elaborate from row t to rr*score(j).
             int cols = t1 + gc; // start to elaborate from column t1 to rc*score(j).
 
