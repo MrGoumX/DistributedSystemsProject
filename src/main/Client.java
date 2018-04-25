@@ -72,7 +72,12 @@ public class Client extends Thread{
                 System.out.println((String) in.readObject());
             }
             else{
-                System.out.println("Recommendation is: " + ((ArrayList<Integer>) in.readObject()).toString());
+                if(in.readBoolean()){
+                    System.out.println("Recommendation is: " + ((ArrayList<Integer>) in.readObject()).toString());
+                }
+                else{
+                    System.out.println("User given out of bounds");
+                }
             }
             exit(0);
         }
@@ -85,6 +90,6 @@ public class Client extends Thread{
     }
 
     public static void main(String[] args) {
-        new Client("127.0.0.1", 4200, 764, 10).start();
+        new Client("127.0.0.1", 4200, 765, 10).start();
     }
 }

@@ -79,7 +79,7 @@ public class Master{
     public static void main(String[] args) {
         String filename = "Data.csv" ;
         String path = Master.class.getProtectionDomain().getCodeSource().getLocation().getPath() + "main" + File.separator + filename ;
-        new Master(path, 1, 20, 0.1, 0.5, 4200, -1, -1).start();
+        new Master(path, 5, 20, 0.1, 0.5, 4200, 765, 1964).start();
     }
 
     public void start(){
@@ -554,8 +554,16 @@ public class Master{
                 out.writeObject("Matrices are not trained yet. So not recommendation for you. For now. OK?");
                 out.flush();
             } else {
-                out.writeObject(getRecommendation(i,j));
-                out.flush();
+                if(i < 0 || i > sol-1){
+                    out.writeBoolean(false);
+                    out.flush();
+                }
+                else{
+                    out.writeBoolean(true);
+                    out.flush();
+                    out.writeObject(getRecommendation(i,j));
+                    out.flush();
+                }
             }
         }
         catch (IOException e){
