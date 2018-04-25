@@ -79,7 +79,7 @@ public class Master{
     public static void main(String[] args) {
         String filename = "Data.csv" ;
         String path = Master.class.getProtectionDomain().getCodeSource().getLocation().getPath() + "main" + File.separator + filename ;
-        new Master(path, 5, 20, 0.1, 0.5, 4200, 765, 1964).start();
+        new Master(path, 1, 20, 0.1, 0.5, 4200, 765, 1964).start();
     }
 
     public void start(){
@@ -265,44 +265,31 @@ public class Master{
     }
 
     /**
-     * Calculates the distribution based on a scoring system
-     */
-    private void calcDist(int size) {
-        // calculate score of each worker and update score list.
-        for(int i = 0; i < size; i++){
-            int score = 0;
-            score += cores.get(i)*2;
-            score += ram.get(i)/1073741824; // 1Gb = 1073741824 bytes.
-            scores.add(i, score);
-        }
-
-        // calculate total score of all workers.
-        int total = 0;
-        for(Integer i : scores){
-            total += i;
-        }
-
-
-        // rr = how many users rows should be elaborated per resource score.
-        // rc = how many items(POIS) columns should be elaborated per resource score.
-        rr = sol/total;
-        rc = sor/total;
-        if(rr == 0) rr = 1; // rr = 0 if sol < total
-        if(rc == 0) rc = 1; // rc = 0 if sor < total
-    }
-
-    /**
      * The method that calculates how to distribute the matrices
      */
     private void calcStarts(int size) {
+        // total stats for all the workers
+        int total = 0;
+        for(int i = 0; i < size; i++){
+            // save the stats for every worker for every core and every gigabyte of ram
+            scores.add(i, cores.get(i) + Math.round(ram.get(i)/1073741824));
+            total += cores.get(i) + Math.round(ram.get(i)/1073741824);
+        }
         // t and t1 contains the last element's indexes of U and I matrices, which has already elaborated from a worker.
         // so current worker elaborates only elements after indexes t and t1.
         int t = 0;
         int t1 = 0;
 
         for(int j = 0; j < size; j++) { // for each worker j
-            int rows = t + rr * scores.get(j); // start to elaborate from row t to rr*score(j).
-            int cols = t1 + rc * scores.get(j); // start to elaborate from column t1 to rc*score(j).
+            double give = (float)scores.get(j)/total;
+            System.out.println(give);
+            int gr = (int)Math.round(give*sol);
+            int gc = (int)Math.round(give*sor);
+            System.out.println("Rows = " + gr);
+            System.out.println("Columns = " + gc);
+            int rows = t + gr; // start to elaborate from row t to rr*score(j).
+            int cols = t1 + gc; // start to elaborate from column t1 to rc*score(j).
+
             if(j != size - 1){ // if current worker isn't the last worker.
                 rowsf.add(j, rows);
                 colsf.add(j, cols);
@@ -320,10 +307,14 @@ public class Master{
      * Matrices distribution
      */
     private void dist() {
-        //Initializes all the needed metrics, such as score and matrices U, I for the start of the training
+        //Reinitialize numerous variables for different kind of datasets
         trained = false;
+        POIS = null;
+        Bin = null;
+        C = null;
+        currError = 0;
+        //Initializes all the needed metrics, such as score and matrices U, I for the start of the training
         initUI();
-        calcDist(workers.size());
         calcStarts(workers.size());
 
         for(int i = 0; i < workers.size(); i++){
@@ -359,7 +350,7 @@ public class Master{
             else{
                 prevError = currError;
                 currError = getError();
-                if(prevError - currError< thres) break;
+                if(prevError - currError < thres) break;
             }
             System.out.println("Trained with error: " + currError);
         }
