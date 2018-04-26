@@ -288,18 +288,27 @@ public class Master{
         for(int i = 0; i < POIS.getColumnDimension(); i++){
             pois_pos[i] = new POI(i, "1", 37 + Jran.nextInt(2)+(double)Math.round(Jran.nextDouble()*1000000)/1000000, 22 + Jran.nextInt(2)+(double)Math.round(Jran.nextDouble()*1000000)/1000000);
         }
+        for(int i = 0; i < workers.size(); i++){
+            scores.add(i, 0);
+        }
     }
 
     /**
      * The method that calculates how to distribute the matrices
      */
     private void calcStarts(int size) {
+        // calculate total time for all workers(1st iteration is 0)
+        int totaltime = 0;
+        for(int i = 0; i < size; i++){
+            totaltime += times.get(i);
+        }
+        totaltime = Math.round(totaltime/1000);
         // total stats for all the workers
         int total = 0;
         for(int i = 0; i < size; i++){
             // save the stats for every worker for every core, every gigabyte of ram and every second of training that is needed(for first iteration time is 0)
-            scores.add(i, cores.get(i) + Math.round(ram.get(i)/1073741824) + Math.round(times.get(i)/1000));
-            total += cores.get(i) + Math.round(ram.get(i)/1073741824) + Math.round(times.get(i)/1000);
+            scores.set(i, cores.get(i) + Math.round(ram.get(i)/1073741824) + (totaltime-Math.round(times.get(i)/1000)));
+            total += cores.get(i) + Math.round(ram.get(i)/1073741824) + (totaltime-Math.round(times.get(i)/1000));
         }
         // t and t1 contains the last element's indexes of U and I matrices, which has already elaborated from a worker.
         // so current worker elaborates only elements after indexes t and t1.
