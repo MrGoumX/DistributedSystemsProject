@@ -26,6 +26,7 @@ public class Master{
     private ArrayList<Integer> colsf = new ArrayList<>(); // colsf is a list that contains the limits of columns for each worker to elaborate.
     private ArrayList<Integer> cores = new ArrayList<>(); // cores is a list that contains the CPU cores of each worker as a number
     private ArrayList<Long> ram = new ArrayList<>(); // ram is a list that contains the RAM of each worker as a number
+    private ArrayList<Long> times = new ArrayList<>(); // times is a list that contains the time of training of every worker
     private POI[] pois_pos = null; // Array that contains the dumb pois
 
     private boolean trained = false, accept = true; // trained, boolean that indicates that the matrices have finished training, accept, boolean that indicates that indicates that master accept worker connections
@@ -81,7 +82,7 @@ public class Master{
         String filename = "Data.csv" ;
         //String path = Master.class.getProtectionDomain().getCodeSource().getLocation().getPath() + "main" + File.separator + filename ;
         String path = "C:/Users/Christos Gkoumas/IdeaProjects/DistributedSystemsProject/src/main/Data.csv";
-        new Master(path, 1, 20, 0.1, 0.5, 4200, 765, 1964).start();
+        new Master(path, 5, 20, 0.1, 0.5, 4200, 765, 1964).start();
     }
 
     public void start(){
@@ -246,6 +247,7 @@ public class Master{
                         cores.remove(i);
                         ram.remove(i);
                         workers.remove(i);
+                        times.remove(i);
                     }
                 }
             }
@@ -295,9 +297,9 @@ public class Master{
         // total stats for all the workers
         int total = 0;
         for(int i = 0; i < size; i++){
-            // save the stats for every worker for every core and every gigabyte of ram
-            scores.add(i, cores.get(i) + Math.round(ram.get(i)/1073741824));
-            total += cores.get(i) + Math.round(ram.get(i)/1073741824);
+            // save the stats for every worker for every core, every gigabyte of ram and every second of training that is needed(for first iteration time is 0)
+            scores.add(i, cores.get(i) + Math.round(ram.get(i)/1073741824) + Math.round(times.get(i)/1000));
+            total += cores.get(i) + Math.round(ram.get(i)/1073741824) + Math.round(times.get(i)/1000);
         }
         // t and t1 contains the last element's indexes of U and I matrices, which has already elaborated from a worker.
         // so current worker elaborates only elements after indexes t and t1.
@@ -337,14 +339,13 @@ public class Master{
         currError = 0;
         //Initializes all the needed metrics, such as score and matrices U, I for the start of the training
         initUI();
-        calcStarts(workers.size());
 
         for(int i = 0; i < workers.size(); i++){
             workers.set(i, new Work(workers.get(i).getSocket(), workers.get(i).getOut(), workers.get(i).getIn(), "BinC", Bin, C));
         }
         startWork();
         for(int i = 0; i < iterations; i++){ // for each iteration of training
-
+            calcStarts(workers.size());
             int size = workers.size(); // so if connection list updated at the middle of an iteration, there isn't problem because still used old size.
             System.out.println("Iteration number " + (i+1) +"\nThe number of workers is " + size);
 
@@ -378,6 +379,7 @@ public class Master{
         }
         accept = true;
         trained = true;
+
         System.out.println("Matrices are finished training");
     }
 
@@ -391,6 +393,7 @@ public class Master{
             RealMatrix TU = MatrixUtils.createRealMatrix(temp);
             IntStream.range(br, rowsf.get(i)).parallel().forEach(j -> U.setRowMatrix(j, TU.getRowMatrix(j)));
             br = rowsf.get(i);
+            times.set(i, workers.get(i).getNanotime());
         }
     }
 
@@ -404,6 +407,7 @@ public class Master{
             RealMatrix TI = MatrixUtils.createRealMatrix(temp);
             IntStream.range(bc, colsf.get(i)).parallel().forEach(j -> I.setRowMatrix(j, TI.getRowMatrix(j)));
             bc = colsf.get(i);
+            times.set(i, workers.get(i).getNanotime()+times.get(i));
         }
     }
 
@@ -554,6 +558,7 @@ public class Master{
             w.join();
             cores.add(w.getCores());
             ram.add(w.getRam());
+            times.add((long) 0);
         }
         catch (InterruptedException e){
             e.printStackTrace();

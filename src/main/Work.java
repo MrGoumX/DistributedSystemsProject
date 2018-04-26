@@ -5,6 +5,7 @@
 
 package main;
 
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.OpenMapRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
@@ -34,7 +35,7 @@ public class Work extends Thread{
 
     // start, finish, startI, finishI = limits which specifies a limited area of U and I matrices to train this worker.
     private int cores, start, finish, k;
-    private long ram;
+    private long ram, nanotime;
     private double lamda; // lamda is L factor
 
     /**
@@ -128,6 +129,8 @@ public class Work extends Thread{
      * Sends matrices to worker after first initialization and take as result matrices U and I after training.
      */
     private void sendMatrices() {
+        StopWatch watch = new StopWatch();
+        watch.start();
         try {
             out.writeObject(message);
             out.writeObject(U.getData());
@@ -150,6 +153,8 @@ public class Work extends Thread{
         catch (IOException | ClassNotFoundException e){
             e.printStackTrace();
         }
+        watch.stop();
+        nanotime = watch.getTime();
     }
 
     /**
@@ -214,4 +219,7 @@ public class Work extends Thread{
         return I.getData();
     }
 
+    public long getNanotime(){
+        return nanotime;
+    }
 }
