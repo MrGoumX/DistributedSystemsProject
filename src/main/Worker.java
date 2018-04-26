@@ -80,6 +80,7 @@ public class Worker extends Thread{
         while(true){
             try{
                 message = (String) in.readObject();
+                if(message==null) continue;
             }
             catch (IOException | ClassNotFoundException e){
                 e.printStackTrace();

@@ -28,7 +28,7 @@ public class Master{
     private ArrayList<Long> ram = new ArrayList<>(); // ram is a list that contains the RAM of each worker as a number
     private POI[] pois_pos = null;
 
-    private boolean trained = true;
+    private boolean trained = false, accept = true;
     private final int port; // port is the port in which server waits for clients.
     private int iterations;    // iterations represents how many times U and I matrices should be trained.
     private String filename; // filename represents path to .csv file, which contains POIS matrix in a specific format.
@@ -52,6 +52,7 @@ public class Master{
     private RealMatrix U, I, tUI;
 
     private List<String[]> lines = new ArrayList<>(); // list lines used to read POIS matrix from .csv file.
+
 
     /**
      * Constructor
@@ -176,7 +177,11 @@ public class Master{
             }
             // train workers.
             else if(ans.equals("3")){
-                dist();
+                if(workers.size()!=0) {
+                    accept = false;
+                    dist();
+                }
+                else System.out.println("No workers connected");
             }
             // close client connection.
             else if(ans.equals("4")){
@@ -228,14 +233,26 @@ public class Master{
      * Method that checks all worker connections
      */
     private void checkConnections(){
-        while(true){
-            for(int i = 0; i < workers.size(); i++){
-                if(!workers.get(i).getSocket().isConnected()){
-                    System.out.println("Worker Disconnected!");
-                    cores.remove(i);
-                    ram.remove(i);
-                    workers.remove(i);
+        while(true) {
+            for (int i = 0; i < workers.size(); i++) {
+                if(accept) {
+                    try{
+                        workers.get(i).getOut().writeObject(null);
+                        workers.get(i).getOut().flush();
+                    }
+                    catch (IOException e){
+                        System.out.println("Worker Disconnected!");
+                        cores.remove(i);
+                        ram.remove(i);
+                        workers.remove(i);
+                    }
                 }
+            }
+            try{
+                Thread.sleep(1000);
+            }
+            catch (InterruptedException e){
+                e.printStackTrace();
             }
         }
     }
@@ -311,7 +328,8 @@ public class Master{
      */
     private void dist() {
         //Reinitialize numerous variables for different kind of datasets
-        trained = false;
+        //trained = false;
+        accept = false;
         POIS = null;
         Bin = null;
         C = null;
@@ -357,6 +375,7 @@ public class Master{
             }
             System.out.println("Trained with error: " + currError);
         }
+        accept = true;
         trained = true;
         System.out.println("Matrices are finished training");
     }
@@ -522,7 +541,7 @@ public class Master{
             // creates new work and bind it with its worker through socket.
             Work w = new Work(socket, out, in, "Stats");
             while(true){
-                if(!trained){
+                if(!accept){
                     Thread.sleep(2000);
                 }
                 else{
