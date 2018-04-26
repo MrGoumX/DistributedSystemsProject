@@ -26,9 +26,9 @@ public class Master{
     private ArrayList<Integer> colsf = new ArrayList<>(); // colsf is a list that contains the limits of columns for each worker to elaborate.
     private ArrayList<Integer> cores = new ArrayList<>(); // cores is a list that contains the CPU cores of each worker as a number
     private ArrayList<Long> ram = new ArrayList<>(); // ram is a list that contains the RAM of each worker as a number
-    private POI[] pois_pos = null;
+    private POI[] pois_pos = null; // Array that contains the dumb pois
 
-    private boolean trained = false, accept = true;
+    private boolean trained = false, accept = true; // trained, boolean that indicates that the matrices have finished training, accept, boolean that indicates that indicates that master accept worker connections
     private final int port; // port is the port in which server waits for clients.
     private int iterations;    // iterations represents how many times U and I matrices should be trained.
     private String filename; // filename represents path to .csv file, which contains POIS matrix in a specific format.
@@ -46,7 +46,7 @@ public class Master{
     // k = factor for U and I one dimension and should be less that max(sor,sol).
     // rr = how many users rows should be elaborated per resource score.
     // rc = how many items(POIS) columns should be elaborated per resource score.
-    private int sol, sor, k, rr, rc;
+    private int sol, sor, k;
 
     // U, I are User and Items(POIS) matrices.
     private RealMatrix U, I, tUI;
@@ -231,6 +231,7 @@ public class Master{
 
     /**
      * Method that checks all worker connections
+     * While the matrices are not training, master sends null packets to check if the connection to the workers is live, if not it removes them from the pool
      */
     private void checkConnections(){
         while(true) {
