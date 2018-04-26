@@ -12,6 +12,7 @@ import java.util.*;
 import java.util.stream.IntStream;
 
 import static java.lang.StrictMath.pow;
+import static java.lang.StrictMath.toIntExact;
 import static java.lang.System.exit;
 
 public class Master{
@@ -283,6 +284,7 @@ public class Master{
         scores.clear();
         rowsf.clear();
         colsf.clear();
+        IntStream.range(0, times.size()).forEach(i -> times.set(i, (long) 0));
         pois_pos = new POI[POIS.getColumnDimension()];
         Random Jran = new Random();
         for(int i = 0; i < POIS.getColumnDimension(); i++){
@@ -298,11 +300,7 @@ public class Master{
      */
     private void calcStarts(int size) {
         // calculate total time for all workers(1st iteration is 0)
-        int totaltime = 0;
-        for(int i = 0; i < size; i++){
-            totaltime += times.get(i);
-        }
-        totaltime = Math.round(totaltime/1000);
+        int totaltime = toIntExact(times.stream().mapToLong(i -> i.longValue()).sum()/1000);
         // total stats for all the workers
         int total = 0;
         for(int i = 0; i < size; i++){
@@ -348,13 +346,16 @@ public class Master{
         currError = 0;
         //Initializes all the needed metrics, such as score and matrices U, I for the start of the training
         initUI();
-
         for(int i = 0; i < workers.size(); i++){
             workers.set(i, new Work(workers.get(i).getSocket(), workers.get(i).getOut(), workers.get(i).getIn(), "BinC", Bin, C));
         }
         startWork();
+
         for(int i = 0; i < iterations; i++){ // for each iteration of training
             calcStarts(workers.size());
+            for(Long l : times){
+                System.out.println("Time: " + l);
+            }
             int size = workers.size(); // so if connection list updated at the middle of an iteration, there isn't problem because still used old size.
             System.out.println("Iteration number " + (i+1) +"\nThe number of workers is " + size);
 
