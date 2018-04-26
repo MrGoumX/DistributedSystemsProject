@@ -1,6 +1,8 @@
 package main;
 
-public class POI {
+import java.io.Serializable;
+
+public class POI implements Serializable{
     private int id;
     private String name;
     private double latitude;
@@ -27,5 +29,9 @@ public class POI {
 
     public double getLongitude(){
         return longitude;
+    }
+
+    public String toString(){
+        return "POI with ID: " + id + " and name: " + name + "at pos: " + latitude + " " + longitude;
     }
 }

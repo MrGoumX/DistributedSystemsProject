@@ -73,7 +73,7 @@ public class Client extends Thread{
             }
             else{
                 if(in.readBoolean()){
-                    System.out.println("Recommendation is: " + ((ArrayList<Integer>) in.readObject()).toString());
+                    System.out.println("Recommendation is: " + ((ArrayList<POI>) in.readObject()).toString());
                 }
                 else{
                     System.out.println("User given out of bounds");

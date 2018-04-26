@@ -26,6 +26,7 @@ public class Master{
     private ArrayList<Integer> colsf = new ArrayList<>(); // colsf is a list that contains the limits of columns for each worker to elaborate.
     private ArrayList<Integer> cores = new ArrayList<>(); // cores is a list that contains the CPU cores of each worker as a number
     private ArrayList<Long> ram = new ArrayList<>(); // ram is a list that contains the RAM of each worker as a number
+    private POI[] pois_pos = null;
 
     private boolean trained = true;
     private final int port; // port is the port in which server waits for clients.
@@ -77,7 +78,8 @@ public class Master{
      */
     public static void main(String[] args) {
         String filename = "Data.csv" ;
-        String path = Master.class.getProtectionDomain().getCodeSource().getLocation().getPath() + "main" + File.separator + filename ;
+        //String path = Master.class.getProtectionDomain().getCodeSource().getLocation().getPath() + "main" + File.separator + filename ;
+        String path = "C:/Users/Christos Gkoumas/IdeaProjects/DistributedSystemsProject/src/main/Data.csv";
         new Master(path, 1, 20, 0.1, 0.5, 4200, 765, 1964).start();
     }
 
@@ -261,6 +263,11 @@ public class Master{
         scores.clear();
         rowsf.clear();
         colsf.clear();
+        pois_pos = new POI[POIS.getColumnDimension()];
+        Random Jran = new Random();
+        for(int i = 0; i < POIS.getColumnDimension(); i++){
+            pois_pos[i] = new POI(i, "1", 37 + Jran.nextInt(2)+(double)Math.round(Jran.nextDouble()*1000000)/1000000, 22 + Jran.nextInt(2)+(double)Math.round(Jran.nextDouble()*1000000)/1000000);
+        }
     }
 
     /**
@@ -388,8 +395,9 @@ public class Master{
      * @param n the column needed
      * @return a list of pois
      */
-    private ArrayList<Integer> getRecommendation(int row, int n){
+    private ArrayList<POI> getRecommendation(int row, int n){
         double[][] user = tUI.getRowMatrix(row).getData();
+        POI[] poi = pois_pos.clone();
         int[] pos = new int[user[0].length];
         for(int i = 0; i < user[0].length; i++){
             if(Bin.getEntry(row, i)>0){
@@ -405,15 +413,19 @@ public class Master{
                 if (user[0][j] > user[0][min_idx])
                     min_idx = j;
             double temp = user[0][min_idx];
-            int temp2 = pos[min_idx];
+            //int temp2 = pos[min_idx];
+            POI temp2 = poi[min_idx];
             user[0][min_idx] = user[0][i];
-            pos[min_idx] = pos[i];
+            //pos[min_idx] = pos[i];
+            poi[min_idx] = poi[i];
             user[0][i] = temp;
-            pos[i] = temp2;
+           // pos[i] = temp2;
+            poi[i] = temp2;
         }
-        ArrayList<Integer> rec = new ArrayList<>();
+        //ArrayList<Integer> rec = new ArrayList<>();
+        ArrayList<POI> rec = new ArrayList<>();
         for(int i = 0; i < n; i++){
-            if(user[0][i]!=Double.NEGATIVE_INFINITY) rec.add(pos[i]);
+            if(user[0][i]!=Double.NEGATIVE_INFINITY) rec.add(poi[i]);
         }
         return rec;
     }
