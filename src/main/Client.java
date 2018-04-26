@@ -17,7 +17,6 @@ public class Client extends Thread{
     private ObjectInputStream in;
     private int i, j;
     private String message;
-    private boolean ctm;
 
     public Client(String master, int port, int i, int j){
         while(true) {
@@ -54,7 +53,6 @@ public class Client extends Thread{
                 break;
             }
             if(message.equalsIgnoreCase("Hello, I'm Master")){
-                ctm = true;
                 recommendation(); // send message to master that you are worker.
             }
         }
