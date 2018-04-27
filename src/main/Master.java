@@ -81,8 +81,8 @@ public class Master{
      */
     public static void main(String[] args) {
         String filename = "Data.csv" ;
-        //String path = Master.class.getProtectionDomain().getCodeSource().getLocation().getPath() + "main" + File.separator + filename ;
-        String path = "C:/Users/Christos Gkoumas/IdeaProjects/DistributedSystemsProject/src/main/Data.csv";
+        String path = Master.class.getProtectionDomain().getCodeSource().getLocation().getPath() + "main" + File.separator + filename ;
+        //String path = "C:/Users/Christos Gkoumas/IdeaProjects/DistributedSystemsProject/src/main/Data.csv";
         new Master(path, 5, 20, 0.1, 0.5, 4200, 765, 1964).start();
     }
 
@@ -298,15 +298,24 @@ public class Master{
     /**
      * The method that calculates how to distribute the matrices
      */
-    private void calcStarts(int size) {
-        // calculate total time for all workers(1st iteration is 0)
-        int totaltime = toIntExact(times.stream().mapToLong(i -> i.longValue()).sum()/1000);
+    private void calcStarts(String type, int size) {
         // total stats for all the workers
         int total = 0;
-        for(int i = 0; i < size; i++){
-            // save the stats for every worker for every core, every gigabyte of ram and every second of training that is needed(for first iteration time is 0)
-            scores.set(i, cores.get(i) + Math.round(ram.get(i)/1073741824) + (totaltime-Math.round(times.get(i)/1000)));
-            total += cores.get(i) + Math.round(ram.get(i)/1073741824) + (totaltime-Math.round(times.get(i)/1000));
+        if(type.equalsIgnoreCase("Specs")){
+            for(int i = 0; i < size; i++){
+                // save the stats for every worker for every core, every gigabyte of ram and every second of training that is needed(for first iteration time is 0)
+                scores.set(i, cores.get(i) + Math.round(ram.get(i)/1073741824));
+                total += cores.get(i) + Math.round(ram.get(i)/1073741824);
+            }
+        }
+        else{
+            for(int i = 0; i < size; i++){
+                // calculate total time for all workers(1st iteration is 0)
+                int totaltime = toIntExact(times.stream().mapToLong(l -> l.longValue()).sum());
+                // save the stats for every worker for every core, every gigabyte of ram and every second of training that is needed(for first iteration time is 0)
+                scores.set(i, toIntExact(totaltime-times.get(i)));
+                total += toIntExact(totaltime-times.get(i));
+            }
         }
         // t and t1 contains the last element's indexes of U and I matrices, which has already elaborated from a worker.
         // so current worker elaborates only elements after indexes t and t1.
@@ -350,9 +359,8 @@ public class Master{
             workers.set(i, new Work(workers.get(i).getSocket(), workers.get(i).getOut(), workers.get(i).getIn(), "BinC", Bin, C));
         }
         startWork();
-
+        calcStarts("Specs", workers.size());
         for(int i = 0; i < iterations; i++){ // for each iteration of training
-            calcStarts(workers.size());
             for(Long l : times){
                 System.out.println("Time: " + l);
             }
@@ -385,6 +393,12 @@ public class Master{
                 currError = getError();
                 if(prevError - currError < thres) break;
             }
+
+            long min = times.stream().mapToLong(l -> l.longValue()).min().getAsLong();
+            long max = times.stream().mapToLong(l -> l.longValue()).max().getAsLong();
+            calcStarts("Time", workers.size());
+
+            System.out.println((double)min/max);
             System.out.println("Trained with error: " + currError);
         }
         accept = true;
