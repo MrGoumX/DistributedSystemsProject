@@ -335,6 +335,8 @@ public class Master{
         long total = times.stream().mapToLong(i -> i.longValue()).sum();
         long[] temp_times = new long[size];
         int[] temp_indexes = new int[size];
+        int[] i_rows = new int[size];
+        int[] i_cols = new int[size];
         for(int i = 0; i < size; i++){
             temp_times[i] = times.get(i);
             temp_indexes[i] = i;
@@ -351,25 +353,41 @@ public class Master{
                 temp_indexes[i] = temp2;
             }
         }
-        int t = 0, t1 = 0, gr = sol, gc = sor;
+        int gr = sol, gc = sor;
         for(int i = 0; i < size; i++){
+            long reversed = total - temp_times[i];
+            System.out.println(reversed);
+            double t_score = (double)reversed / total;
+            int t_rows = (int) (Math.round(t_score * gr));
+            System.out.println(t_rows);
+            int t_cols = (int) (Math.round(t_score * gc));
             if(i != size-1) {
-                double t_score = (double)(total - temp_times[i]) / total;
-                int t_rows = t + toIntExact(Math.round(t_score * gr));
-                int t_cols = t1 + toIntExact(Math.round(t_score * gc));
-                System.out.println("Rows: " + t_rows);
-                System.out.println("Columns: " + t_cols);
-                rowsf.add(temp_indexes[i], t_rows);
-                colsf.add(temp_indexes[i], t_cols);
-                t = t_rows;
-                t1 = t_cols;
-                gr -= t_rows;
-                gc -= t_cols;
+                i_rows[temp_indexes[i]] = t_rows;
+                i_cols[temp_indexes[i]] = t_cols;
             }
             else{
-                rowsf.add(temp_indexes[i], POIS.getRowDimension());
-                colsf.add(temp_indexes[i], POIS.getColumnDimension());
+                i_rows[temp_indexes[i]] = gr;
+                i_cols[temp_indexes[i]] = gc;
             }
+            gr -= t_rows;
+            gc -= t_cols;
+        }
+        int t = 0, t1 = 0;
+        for(int i = 0; i < size; i++){
+            int rows = t + i_rows[i];
+            int cols = t1 + i_cols[i];
+            rowsf.add(i, rows);
+            colsf.add(i, cols);
+            /*if(i != size-1){
+                rowsf.add(i, rows);
+                colsf.add(i, cols);
+            }
+            else {
+                rowsf.add(i, POIS.getRowDimension());
+                colsf.add(i, POIS.getColumnDimension());
+            }*/
+            t = rows;
+            t1 = cols;
         }
     }
 
@@ -429,7 +447,6 @@ public class Master{
             long max = times.stream().mapToLong(l -> l.longValue()).max().getAsLong();
             calcStartsTime(workers.size());
 
-            System.out.println((double)min/max);
             System.out.println("Trained with error: " + currError);
         }
         accept = true;
