@@ -200,19 +200,6 @@ public class Worker extends Thread{
         RealMatrix IT = I.transpose();
         RealMatrix MI = IT.multiply(I);
         IntStream.range(start, finish).parallel().forEach(i -> trainU(i, IT, MI));
-        /*for(int i = start; i < finish; i++){
-            RealMatrix temp = MatrixUtils.createRealDiagonalMatrix(C.getRow(i));
-            RealMatrix FS = IT.multiply(temp.subtract(ocm));
-            FS = FS.multiply(I);
-            FS = FS.add(MI);
-            FS = FS.add(ncm.scalarMultiply(lamda));
-            FS = new QRDecomposition(FS).getSolver().getInverse();
-            FS = FS.multiply(IT);
-            FS = FS.multiply(temp);
-            FS = FS.transpose();
-            FS = FS.preMultiply(Bin.getRowMatrix(i));
-            U.setRowMatrix(i, FS);
-        }*/
     }
 
     /**
@@ -237,19 +224,6 @@ public class Worker extends Thread{
         RealMatrix UT = U.transpose();
         RealMatrix MU = UT.multiply(U);
         IntStream.range(start, finish).parallel().forEach(i -> trainI(i, UT, MU));
-        /*for(int i = start; i < finish; i++){
-            RealMatrix temp = MatrixUtils.createRealDiagonalMatrix(C.getColumn(i));
-            RealMatrix FS = UT.multiply(temp.subtract(orm));
-            FS = FS.multiply(U);
-            FS = FS.add(MU);
-            FS = FS.add(ncm.scalarMultiply(lamda));
-            FS = new QRDecomposition(FS).getSolver().getInverse();
-            FS = FS.multiply(UT);
-            FS = FS.multiply(temp);
-            FS = FS.transpose();
-            FS = FS.preMultiply(Bin.getColumnMatrix(i).transpose());
-            I.setRowMatrix(i, FS);
-        }*/
     }
 
     /**

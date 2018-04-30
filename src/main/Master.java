@@ -342,35 +342,36 @@ public class Master{
             temp_indexes[i] = i;
         }
         for(int i = 0; i < size-1; i++){
-            int min = i;
+            int m_i = i;
             for(int j = i+1; j < size; j++){
-                if(temp_times[j] < temp_times[min]) min = j;
-                long temp = temp_times[min];
-                int temp2 = temp_indexes[min];
-                temp_times[min] = temp_times[i];
-                temp_indexes[min] = temp_indexes[i];
+                if(temp_times[j] < temp_times[m_i]) m_i = j;
+                long temp = temp_times[m_i];
+                int temp2 = temp_indexes[m_i];
+                temp_times[m_i] = temp_times[i];
+                temp_indexes[m_i] = temp_indexes[i];
                 temp_times[i] = temp;
                 temp_indexes[i] = temp2;
             }
         }
         int gr = sol, gc = sor;
         for(int i = 0; i < size; i++){
-            long reversed = total - temp_times[i];
-            System.out.println(reversed);
-            double t_score = (double)reversed / total;
+            double reversed = total - temp_times[i];
+            double t_score = (reversed/total)/(size-1);
+            System.out.println("Score: " + t_score);
             int t_rows = (int) (Math.round(t_score * gr));
-            System.out.println(t_rows);
             int t_cols = (int) (Math.round(t_score * gc));
-            if(i != size-1) {
+            i_rows[temp_indexes[i]] = t_rows;
+            i_cols[temp_indexes[i]] = t_cols;
+            /*if(i != size-1) {
                 i_rows[temp_indexes[i]] = t_rows;
                 i_cols[temp_indexes[i]] = t_cols;
             }
             else{
                 i_rows[temp_indexes[i]] = gr;
                 i_cols[temp_indexes[i]] = gc;
-            }
-            gr -= t_rows;
-            gc -= t_cols;
+            }*/
+            /*gr -= t_rows;
+            gc -= t_cols;*/
         }
         int t = 0, t1 = 0;
         for(int i = 0; i < size; i++){
@@ -378,14 +379,14 @@ public class Master{
             int cols = t1 + i_cols[i];
             rowsf.add(i, rows);
             colsf.add(i, cols);
-            /*if(i != size-1){
+            if(i != size-1){
                 rowsf.add(i, rows);
                 colsf.add(i, cols);
             }
             else {
                 rowsf.add(i, POIS.getRowDimension());
                 colsf.add(i, POIS.getColumnDimension());
-            }*/
+            }
             t = rows;
             t1 = cols;
         }
@@ -410,9 +411,6 @@ public class Master{
         startWork();
         calcStarts(workers.size());
         for(int i = 0; i < iterations; i++){ // for each iteration of training
-            for(Long l : times){
-                System.out.println("Time: " + l);
-            }
             int size = workers.size(); // so if connection list updated at the middle of an iteration, there isn't problem because still used old size.
             System.out.println("Iteration number " + (i+1) +"\nThe number of workers is " + size);
 
@@ -443,8 +441,9 @@ public class Master{
                 if(prevError - currError < thres) break;
             }
 
-            long min = times.stream().mapToLong(l -> l.longValue()).min().getAsLong();
-            long max = times.stream().mapToLong(l -> l.longValue()).max().getAsLong();
+            for(Long l : times){
+                System.out.println("Time: " + l);
+            }
             calcStartsTime(workers.size());
 
             System.out.println("Trained with error: " + currError);
