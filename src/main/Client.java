@@ -17,8 +17,9 @@ public class Client extends Thread{
     private ObjectInputStream in;
     private int i, j;
     private String message;
+    private double lat, lon, rad;
 
-    public Client(String master, int port, int i, int j){
+    public Client(String master, int port, int i, int j, double lat, double lon, double rad){
         while(true) {
             try {
                 socket = new Socket(master, port);
@@ -38,6 +39,9 @@ public class Client extends Thread{
         }
         this.i = i;
         this.j = j;
+        this.lat = lat;
+        this.lon = lon;
+        this.rad = rad;
     }
 
     /**
@@ -64,6 +68,9 @@ public class Client extends Thread{
             out.flush();
             out.writeInt(i);
             out.writeInt(j);
+            out.writeDouble(lat);
+            out.writeDouble(lon);
+            out.writeDouble(rad);
             out.flush();
             boolean trained = in.readBoolean();
             if(!trained){
@@ -88,6 +95,6 @@ public class Client extends Thread{
     }
 
     public static void main(String[] args) {
-        new Client("127.0.0.1", 4200, 764, 10).start();
+        new Client("127.0.0.1", 4200, 764, 10, 40.731934, -73.988199, 3).start();
     }
 }

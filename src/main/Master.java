@@ -4,10 +4,15 @@ import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.OpenMapRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.random.JDKRandomGenerator;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.IntStream;
 
@@ -28,7 +33,7 @@ public class Master{
     private ArrayList<Integer> cores = new ArrayList<>(); // cores is a list that contains the CPU cores of each worker as a number
     private ArrayList<Long> ram = new ArrayList<>(); // ram is a list that contains the RAM of each worker as a number
     private ArrayList<Long> times = new ArrayList<>(); // times is a list that contains the time of training of every worker
-    private POI[] pois_pos = null; // Array that contains the dumb pois
+    private POI[] pois = null;
 
     private boolean trained = false, accept = true; // trained, boolean that indicates that the matrices have finished training, accept, boolean that indicates that indicates that master accept worker connections
     private final int port; // port is the port in which server waits for clients.
@@ -83,7 +88,7 @@ public class Master{
         String filename = "Data.csv" ;
         String path = Master.class.getProtectionDomain().getCodeSource().getLocation().getPath() + "main" + File.separator + filename ;
         //String path = "C:/Users/Christos Gkoumas/IdeaProjects/DistributedSystemsProject/src/main/Data.csv";
-        new Master(path, 2, 20, 0.1, 0.5, 4200, 765, 1964).start();
+        new Master(path, 5, 20, 0.1, 0.5, 4200, -1, -1).start();
     }
 
     public void start(){
@@ -281,15 +286,39 @@ public class Master{
         }
         U = U.scalarAdd(0.01);
         I = I.scalarAdd(0.01);
+        pois = new POI[POIS.getColumnDimension()];
         scores.clear();
         rowsf.clear();
         colsf.clear();
         IntStream.range(0, times.size()).forEach(i -> times.set(i, (long) 0));
-        pois_pos = new POI[POIS.getColumnDimension()];
-        Random Jran = new Random();
-        for(int i = 0; i < POIS.getColumnDimension(); i++){
-            pois_pos[i] = new POI(i, "1", 37 + Jran.nextInt(2)+(double)Math.round(Jran.nextDouble()*1000000)/1000000, 22 + Jran.nextInt(2)+(double)Math.round(Jran.nextDouble()*1000000)/1000000);
+        String j_path = Master.class.getProtectionDomain().getCodeSource().getLocation().getPath() + "main" + File.separator + "POIs.json";
+        JSONParser parser = new JSONParser();
+        try{
+            Object obj = parser.parse(new FileReader(j_path));
+            JSONObject jsonObject = (JSONObject) obj;
+            for(int i = 0; i < POIS.getColumnDimension(); i++){
+                Integer temp_i = i;
+                JSONObject list = (JSONObject) jsonObject.get(temp_i.toString());
+                int id = i;
+                String r_id = (String) list.get("POI");
+                double lat = (double) list.get("latidude");
+                double lon = (double) list.get("longitude");
+                String photo = (String) list.get("photos");
+                String cat = (String) list.get("POI_category_id");
+                String name = (String) list.get("POI_name");
+                POI temp = new POI(id, r_id, lat, lon, photo, cat, name);
+                pois[i] = temp;
+            }
         }
+        catch (Exception e){
+        }
+        System.out.println(pois[524].getR_id());
+        System.out.println(pois[525].getR_id());
+        /*for(int i = 0; i < POIS.getColumnDimension(); i++){
+            //pois_pos[i] = new POI(i, "1", 37 + Jran.nextInt(2)+(double)Math.round(Jran.nextDouble()*1000000)/1000000, 22 + Jran.nextInt(2)+(double)Math.round(Jran.nextDouble()*1000000)/1000000);
+            int id = i;
+            double lat
+        }*/
         for(int i = 0; i < workers.size(); i++){
             scores.add(i, 0);
         }
@@ -357,7 +386,7 @@ public class Master{
         for(int i = 0; i < size; i++){
             double reversed = total - temp_times[i];
             double t_score = (reversed/total)/(size-1);
-            System.out.println("Score: " + t_score);
+            //System.out.println("Score: " + t_score);
             int t_rows = (int) (Math.round(t_score * gr));
             int t_cols = (int) (Math.round(t_score * gc));
             i_rows[temp_indexes[i]] = t_rows;
@@ -490,9 +519,9 @@ public class Master{
      * @param n the column needed
      * @return a list of pois
      */
-    private ArrayList<POI> getRecommendation(int row, int n){
+    private ArrayList<POI> getRecommendation(int row, int n, double lat, double lon, double radius){
         double[][] user = tUI.getRowMatrix(row).getData();
-        POI[] poi = pois_pos.clone();
+        POI[] poi = pois.clone();
         int[] pos = new int[user[0].length];
         for(int i = 0; i < user[0].length; i++){
             if(Bin.getEntry(row, i)>0){
@@ -519,8 +548,24 @@ public class Master{
         }
         //ArrayList<Integer> rec = new ArrayList<>();
         ArrayList<POI> rec = new ArrayList<>();
-        for(int i = 0; i < n; i++){
-            if(user[0][i]!=Double.NEGATIVE_INFINITY) rec.add(poi[i]);
+        int count = 0;
+        final int R = 6371;
+        double met = radius*1000;
+        for(int i = 0; i < size; i++){
+            double latDist = Math.toRadians(poi[i].getLatitude() - lat);
+            double lonDist = Math.toRadians(poi[i].getLongitude() - lon);
+            double a = Math.sin(latDist / 2) * Math.sin(latDist / 2)
+                    + Math.cos(Math.toRadians(poi[i].getLatitude())) * Math.cos(Math.toRadians(lat))
+                    * Math.sin(lonDist / 2) * Math.sin(lonDist / 2);
+            double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            double distance = R * c * 1000;
+            distance = Math.pow(distance, 2);
+            distance = Math.sqrt(distance);
+            if(user[0][i]!=Double.NEGATIVE_INFINITY && distance <= met){
+                rec.add(poi[i]);
+                count++;
+                if(count == n-1) break;
+            }
         }
         return rec;
     }
@@ -643,6 +688,9 @@ public class Master{
         try {
             int i = in.readInt();
             int j = in.readInt();
+            double lat = in.readDouble();
+            double lon = in.readDouble();
+            double radius = in.readDouble();
             out.writeBoolean(trained);
             out.flush();
             if (!trained) {
@@ -656,7 +704,7 @@ public class Master{
                 else{
                     out.writeBoolean(true);
                     out.flush();
-                    out.writeObject(getRecommendation(i,j));
+                    out.writeObject(getRecommendation(i,j,lat,lon,radius));
                     out.flush();
                 }
             }
