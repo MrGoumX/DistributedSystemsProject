@@ -10,6 +10,7 @@ public class POI implements Serializable{
     private String photo;
     private String cat;
     private String name;
+    private double distance;
 
     public POI(int id, String r_id, double latitude, double longitude, String photo, String cat, String name){
         this.id = id;
@@ -19,6 +20,9 @@ public class POI implements Serializable{
         this.photo = photo;
         this.cat = cat;
         this.name = name;
+    }
+    public void setDistance(double distance){
+        this.distance = distance;
     }
 
     public int getId(){
@@ -47,6 +51,10 @@ public class POI implements Serializable{
 
     public String getName(){
         return name;
+    }
+
+    public double getDistance(){
+        return distance;
     }
 
     public String toString(){

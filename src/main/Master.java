@@ -312,8 +312,6 @@ public class Master{
         }
         catch (Exception e){
         }
-        System.out.println(pois[524].getR_id());
-        System.out.println(pois[525].getR_id());
         for(int i = 0; i < workers.size(); i++){
             scores.add(i, 0);
         }
@@ -560,6 +558,7 @@ public class Master{
             distance = Math.pow(distance, 2);
             distance = Math.sqrt(distance);
             if(user[0][i]!=Double.NEGATIVE_INFINITY && distance <= met){
+                poi[i].setDistance(distance);
                 rec.add(poi[i]);
                 count++;
                 if(count == n-1) break;
