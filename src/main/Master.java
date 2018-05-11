@@ -267,7 +267,7 @@ public class Master{
     }
 
     /**
-     * Method that initializes POIS, U & I matrices
+     * Method that initializes POIS, U & I matrices and reads all the POIs info from the JSON file
      */
     private void initUI(){
         initMatrices(filename); // initialize for first time all matrices.
@@ -314,11 +314,6 @@ public class Master{
         }
         System.out.println(pois[524].getR_id());
         System.out.println(pois[525].getR_id());
-        /*for(int i = 0; i < POIS.getColumnDimension(); i++){
-            //pois_pos[i] = new POI(i, "1", 37 + Jran.nextInt(2)+(double)Math.round(Jran.nextDouble()*1000000)/1000000, 22 + Jran.nextInt(2)+(double)Math.round(Jran.nextDouble()*1000000)/1000000);
-            int id = i;
-            double lat
-        }*/
         for(int i = 0; i < workers.size(); i++){
             scores.add(i, 0);
         }
@@ -513,16 +508,21 @@ public class Master{
 
     /**
      * The method that produces the recommendation after training.
-     * It returns recommendation as an array of integer, which represent number of column of POIS.
+     * It returns recommendation as an array of POI, which represent number of column of POIS.
      * Parameters row and col are the user position (if suppose that user is at a POI).
      * @param row the row needed
      * @param n the column needed
+     * @param lat the latitude of the user
+     * @param lon the longitude of the user
+     * @param radius the radius around the user to search in KM
      * @return a list of pois
      */
     private ArrayList<POI> getRecommendation(int row, int n, double lat, double lon, double radius){
+        //Get user row and copy the pois info
         double[][] user = tUI.getRowMatrix(row).getData();
         POI[] poi = pois.clone();
         int[] pos = new int[user[0].length];
+        //set 0 where the user has been
         for(int i = 0; i < user[0].length; i++){
             if(Bin.getEntry(row, i)>0){
                 user[0][i] = Double.NEGATIVE_INFINITY;
@@ -530,6 +530,7 @@ public class Master{
             pos[i] = i;
         }
         int size = user[0].length;
+        //sort the array
         for (int i = 0; i < size-1; i++)
         {
             int min_idx = i;
@@ -537,20 +538,17 @@ public class Master{
                 if (user[0][j] > user[0][min_idx])
                     min_idx = j;
             double temp = user[0][min_idx];
-            //int temp2 = pos[min_idx];
             POI temp2 = poi[min_idx];
             user[0][min_idx] = user[0][i];
-            //pos[min_idx] = pos[i];
             poi[min_idx] = poi[i];
             user[0][i] = temp;
-           // pos[i] = temp2;
             poi[i] = temp2;
         }
-        //ArrayList<Integer> rec = new ArrayList<>();
         ArrayList<POI> rec = new ArrayList<>();
         int count = 0;
         final int R = 6371;
         double met = radius*1000;
+        //add the places where the user might be interested to go and is rad KM around him
         for(int i = 0; i < size; i++){
             double latDist = Math.toRadians(poi[i].getLatitude() - lat);
             double lonDist = Math.toRadians(poi[i].getLongitude() - lon);
