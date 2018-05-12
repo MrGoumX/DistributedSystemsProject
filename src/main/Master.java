@@ -701,8 +701,21 @@ public class Master{
                 else{
                     out.writeBoolean(true);
                     out.flush();
-                    out.writeObject(getRecommendation(i,j,lat,lon,radius));
+                    //out.writeObject(getRecommendation(i,j,lat,lon,radius));
+                    ArrayList<POI> temp = getRecommendation(i,j,lat,lon,radius);
+                    out.writeInt(temp.size());
                     out.flush();
+                    for(POI t :temp){
+                        out.writeInt(t.getId());
+                        out.writeObject(t.getR_id());
+                        out.writeDouble(t.getLatitude());
+                        out.writeDouble(t.getLongitude());
+                        out.writeObject(t.getPhoto());
+                        out.writeObject(t.getCat());
+                        out.writeObject(t.getName());
+                        out.writeDouble(t.getDistance());
+                        out.flush();
+                    }
                 }
             }
         }

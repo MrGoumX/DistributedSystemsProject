@@ -3,6 +3,7 @@ package main;
 import java.io.Serializable;
 
 public class POI implements Serializable{
+    private static final long serialVersionUID = 42L;
     private int id;
     private double latitude;
     private double longitude;

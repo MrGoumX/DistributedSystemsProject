@@ -78,7 +78,22 @@ public class Client extends Thread{
             }
             else{
                 if(in.readBoolean()){
-                    System.out.println("Recommendation is: " + ((ArrayList<POI>) in.readObject()).toString());
+                    int size = in.readInt();
+                    ArrayList<POI> temp = new ArrayList<>();
+                    for(int i = 0; i < size; i++){
+                        int id = in.readInt();
+                        String r_id = (String) in.readObject();
+                        double lat = in.readDouble();
+                        double lng = in.readDouble();
+                        String photo = (String) in.readObject();
+                        String cat = (String) in.readObject();
+                        String name = (String) in.readObject();
+                        double distance = in.readDouble();
+                        POI t = new POI(id, r_id, lat, lng, photo, cat, name);
+                        t.setDistance(distance);
+                        temp.add(t);
+                    }
+                    System.out.println(temp.toString());
                 }
                 else{
                     System.out.println("User given out of bounds");
@@ -95,6 +110,6 @@ public class Client extends Thread{
     }
 
     public static void main(String[] args) {
-        new Client("127.0.0.1", 4200, 764, 10, 40.731934, -73.988199, 3).start();
+        new Client("127.0.0.1", 4200, 764, 10, 40.967786, -74.073689683333, 3).start();
     }
 }
