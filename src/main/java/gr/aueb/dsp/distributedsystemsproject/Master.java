@@ -1,4 +1,4 @@
-package main;
+package gr.aueb.dsp.distributedsystemsproject;
 
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.OpenMapRealMatrix;
@@ -10,6 +10,8 @@ import org.json.simple.parser.JSONParser;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.IntStream;
 
@@ -81,8 +83,8 @@ public class Master{
      *  method
      */
     public static void main(String[] args) {
-        String filename = "Data_old.csv" ;
-        String path = Master.class.getProtectionDomain().getCodeSource().getLocation().getPath() + "main" + File.separator + filename ;
+        String filename = "Data.csv" ;
+        String path = System.getProperty("user.dir") + File.separator + "src" + File.separator + "main" + File.separator + "java" + File.separator + "gr" + File.separator + "aueb" + File.separator + "dsp" + File.separator + "distributedsystemsproject" + File.separator + filename;
         new Master(path, 5, 20, 0.1, 0.5, 4200, -1, -1).start();
     }
 
@@ -284,7 +286,7 @@ public class Master{
         rowsf.clear();
         colsf.clear();
         IntStream.range(0, times.size()).forEach(i -> times.set(i, (long) 0));
-        String j_path = Master.class.getProtectionDomain().getCodeSource().getLocation().getPath() + "main" + File.separator + "POIs.json";
+        String j_path = System.getProperty("user.dir") + File.separator + "src" + File.separator + "main" + File.separator + "java" + File.separator + "gr" + File.separator + "aueb" + File.separator + "dsp" + File.separator + "distributedsystemsproject" + File.separator + "POIs.json";
         JSONParser parser = new JSONParser();
         try{
             Object obj = parser.parse(new FileReader(j_path));
@@ -685,19 +687,8 @@ public class Master{
                     out.writeBoolean(true);
                     out.flush();
                     ArrayList<POI> temp = getRecommendation(i,j,lat,lon,radius);
-                    out.writeInt(temp.size());
+                    out.writeObject(temp);
                     out.flush();
-                    for(POI t :temp){
-                        out.writeInt(t.getId());
-                        out.writeObject(t.getR_id());
-                        out.writeDouble(t.getLatitude());
-                        out.writeDouble(t.getLongitude());
-                        out.writeObject(t.getPhoto());
-                        out.writeObject(t.getCat());
-                        out.writeObject(t.getName());
-                        out.writeDouble(t.getDistance());
-                        out.flush();
-                    }
                 }
             }
         }

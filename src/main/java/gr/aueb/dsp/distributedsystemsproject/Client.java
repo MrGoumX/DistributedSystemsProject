@@ -1,4 +1,4 @@
-package main;
+package gr.aueb.dsp.distributedsystemsproject;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;

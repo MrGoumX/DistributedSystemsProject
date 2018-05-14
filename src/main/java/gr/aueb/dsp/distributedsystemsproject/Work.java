@@ -3,7 +3,7 @@
 * class Work used to parse matrices, factors and others parameters from master to worker in new thread.
 * */
 
-package main;
+package gr.aueb.dsp.distributedsystemsproject;
 
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.math3.linear.MatrixUtils;

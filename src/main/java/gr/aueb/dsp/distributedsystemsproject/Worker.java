@@ -1,4 +1,4 @@
-package main;
+package gr.aueb.dsp.distributedsystemsproject;
 
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.OpenMapRealMatrix;
