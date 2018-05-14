@@ -85,7 +85,7 @@ public class Master{
      *  method
      */
     public static void main(String[] args) {
-        String filename = "Data_old.csv" ;
+        String filename = "Data.csv" ;
         String path = Master.class.getProtectionDomain().getCodeSource().getLocation().getPath() + "main" + File.separator + filename ;
         //String path = "C:/Users/Christos Gkoumas/IdeaProjects/DistributedSystemsProject/src/main/Data.csv";
         new Master(path, 5, 20, 0.1, 0.5, 4200, -1, -1).start();
@@ -284,8 +284,6 @@ public class Master{
                 I.setEntry(i,j, ran.nextDouble());
             }
         }
-        U = U.scalarAdd(0.01);
-        I = I.scalarAdd(0.01);
         pois = new POI[POIS.getColumnDimension()];
         scores.clear();
         rowsf.clear();
@@ -581,16 +579,8 @@ public class Master{
                 err += C.getEntry(i,j)*(pow((Bin.getEntry(i,j)-tUI.getEntry(i,j)),2));
             }
         }
-        double temp = 0;
-        for(int i = 0; i < sol; i++){
-            temp += U.getRowMatrix(i).getFrobeniusNorm();
-        }
-        for(int i = 0; i < sor; i++){
-            temp += I.getRowMatrix(i).getFrobeniusNorm();
-        }
-        temp = lamda*temp;
-        System.out.println(temp);
-        err += temp;
+        double normalization = (pow(U.getFrobeniusNorm(), 2) + pow(I.getFrobeniusNorm(), 2))*lamda;
+        err += normalization;
         //err += lamda*(I.getFrobeniusNorm() + U.getFrobeniusNorm());
         //System.out.println(lamda*(I.getFrobeniusNorm() + U.getFrobeniusNorm()));
         return err;
