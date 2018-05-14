@@ -15,6 +15,7 @@ import java.util.Arrays;
 import java.util.stream.IntStream;
 
 import static java.lang.System.exit;
+import static java.lang.System.setOut;
 
 
 public class Worker extends Thread{

@@ -85,7 +85,7 @@ public class Master{
      *  method
      */
     public static void main(String[] args) {
-        String filename = "Data.csv" ;
+        String filename = "Data_old.csv" ;
         String path = Master.class.getProtectionDomain().getCodeSource().getLocation().getPath() + "main" + File.separator + filename ;
         //String path = "C:/Users/Christos Gkoumas/IdeaProjects/DistributedSystemsProject/src/main/Data.csv";
         new Master(path, 5, 20, 0.1, 0.5, 4200, -1, -1).start();
@@ -515,7 +515,11 @@ public class Master{
      * @param radius the radius around the user to search in KM
      * @return a list of pois
      */
-    private ArrayList<POI> getRecommendation(int row, int n, double lat, double lon, double radius){
+    private ArrayList<POI> getRecommendation(int row, int n, double lat, double lon, double radius)
+    {
+        System.out.println("User: " + row);
+        System.out.println("K: " + n);
+        System.out.println("Rad: " + radius);
         //Get user row and copy the pois info
         double[][] user = tUI.getRowMatrix(row).getData();
         POI[] poi = pois.clone();
@@ -561,7 +565,7 @@ public class Master{
                 poi[i].setDistance(distance);
                 rec.add(poi[i]);
                 count++;
-                if(count == n-1) break;
+                if(count == n) break;
             }
         }
         return rec;
@@ -577,7 +581,18 @@ public class Master{
                 err += C.getEntry(i,j)*(pow((Bin.getEntry(i,j)-tUI.getEntry(i,j)),2));
             }
         }
-        err -= lamda*(I.getFrobeniusNorm() + U.getFrobeniusNorm());
+        double temp = 0;
+        for(int i = 0; i < sol; i++){
+            temp += U.getRowMatrix(i).getFrobeniusNorm();
+        }
+        for(int i = 0; i < sor; i++){
+            temp += I.getRowMatrix(i).getFrobeniusNorm();
+        }
+        temp = lamda*temp;
+        System.out.println(temp);
+        err += temp;
+        //err += lamda*(I.getFrobeniusNorm() + U.getFrobeniusNorm());
+        //System.out.println(lamda*(I.getFrobeniusNorm() + U.getFrobeniusNorm()));
         return err;
     }
 
