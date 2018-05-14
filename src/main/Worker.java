@@ -16,7 +16,6 @@ import java.util.stream.IntStream;
 
 import static java.lang.System.exit;
 
-
 public class Worker extends Thread{
     /**
      * Variable Definition
@@ -80,6 +79,7 @@ public class Worker extends Thread{
         while(true){
             try{
                 message = (String) in.readObject();
+                if(message==null) continue;
             }
             catch (IOException | ClassNotFoundException e){
                 e.printStackTrace();
@@ -205,16 +205,14 @@ public class Worker extends Thread{
      * The method that trains the Users matrix based on the POI matrix
      */
     private void trainU(int i, RealMatrix IT, RealMatrix MI){
-        RealMatrix temp = MatrixUtils.createRealDiagonalMatrix(C.getRow(i));
-        RealMatrix FS = IT.multiply(temp.subtract(ocm));
+        RealMatrix row = MatrixUtils.createRealDiagonalMatrix(C.getRow(i));
+        RealMatrix FS = IT.multiply(row.subtract(ocm));
         FS = FS.multiply(I);
         FS = FS.add(MI);
         FS = FS.add(ncm.scalarMultiply(lamda));
         FS = new QRDecomposition(FS).getSolver().getInverse();
-        FS = FS.multiply(IT);
-        FS = FS.multiply(temp);
-        FS = FS.transpose();
-        FS = FS.preMultiply(Bin.getRowMatrix(i));
+        FS = FS.multiply(IT).transpose();
+        FS = Bin.getRowMatrix(i).multiply(row).multiply(FS);
         U.setRowMatrix(i, FS);
     }
 
@@ -229,16 +227,14 @@ public class Worker extends Thread{
      * The method that trains the POI matrix based on the Users matrix
      */
     private void trainI(int i, RealMatrix UT, RealMatrix MU){
-        RealMatrix temp = MatrixUtils.createRealDiagonalMatrix(C.getColumn(i));
-        RealMatrix FS = UT.multiply(temp.subtract(orm));
+        RealMatrix col = MatrixUtils.createRealDiagonalMatrix(C.getColumn(i));
+        RealMatrix FS = UT.multiply(col.subtract(orm));
         FS = FS.multiply(U);
         FS = FS.add(MU);
         FS = FS.add(ncm.scalarMultiply(lamda));
         FS = new QRDecomposition(FS).getSolver().getInverse();
         FS = FS.multiply(UT);
-        FS = FS.multiply(temp);
-        FS = FS.transpose();
-        FS = FS.preMultiply(Bin.getColumnMatrix(i).transpose());
+        FS = FS.multiply(col.multiply(Bin.getColumnMatrix(i))).transpose();
         I.setRowMatrix(i, FS);
     }
 

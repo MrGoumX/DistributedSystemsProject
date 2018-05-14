@@ -17,9 +17,9 @@ public class Client extends Thread{
     private ObjectInputStream in;
     private int i, j;
     private String message;
-    private boolean ctm;
+    private double lat, lon, rad;
 
-    public Client(String master, int port, int i, int j){
+    public Client(String master, int port, int i, int j, double lat, double lon, double rad){
         while(true) {
             try {
                 socket = new Socket(master, port);
@@ -39,6 +39,9 @@ public class Client extends Thread{
         }
         this.i = i;
         this.j = j;
+        this.lat = lat;
+        this.lon = lon;
+        this.rad = rad;
     }
 
     /**
@@ -54,7 +57,6 @@ public class Client extends Thread{
                 break;
             }
             if(message.equalsIgnoreCase("Hello, I'm Master")){
-                ctm = true;
                 recommendation(); // send message to master that you are worker.
             }
         }
@@ -66,6 +68,9 @@ public class Client extends Thread{
             out.flush();
             out.writeInt(i);
             out.writeInt(j);
+            out.writeDouble(lat);
+            out.writeDouble(lon);
+            out.writeDouble(rad);
             out.flush();
             boolean trained = in.readBoolean();
             if(!trained){
@@ -73,7 +78,22 @@ public class Client extends Thread{
             }
             else{
                 if(in.readBoolean()){
-                    System.out.println("Recommendation is: " + ((ArrayList<Integer>) in.readObject()).toString());
+                    int size = in.readInt();
+                    ArrayList<POI> temp = new ArrayList<>();
+                    for(int i = 0; i < size; i++){
+                        int id = in.readInt();
+                        String r_id = (String) in.readObject();
+                        double lat = in.readDouble();
+                        double lng = in.readDouble();
+                        String photo = (String) in.readObject();
+                        String cat = (String) in.readObject();
+                        String name = (String) in.readObject();
+                        double distance = in.readDouble();
+                        POI t = new POI(id, r_id, lat, lng, photo, cat, name);
+                        t.setDistance(distance);
+                        temp.add(t);
+                    }
+                    System.out.println(temp.toString());
                 }
                 else{
                     System.out.println("User given out of bounds");
@@ -90,6 +110,6 @@ public class Client extends Thread{
     }
 
     public static void main(String[] args) {
-        new Client("127.0.0.1", 4200, 764, 11).start();
+        new Client("127.0.0.1", 4200, 764, 10, 40.967786, -74.073689683333, 3).start();
     }
 }
