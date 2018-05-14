@@ -4,20 +4,16 @@ import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.OpenMapRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.random.JDKRandomGenerator;
-import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.IntStream;
 
 import static java.lang.StrictMath.pow;
-import static java.lang.StrictMath.toIntExact;
 import static java.lang.System.exit;
 
 public class Master{
@@ -85,9 +81,8 @@ public class Master{
      *  method
      */
     public static void main(String[] args) {
-        String filename = "Data.csv" ;
+        String filename = "Data_old.csv" ;
         String path = Master.class.getProtectionDomain().getCodeSource().getLocation().getPath() + "main" + File.separator + filename ;
-        //String path = "C:/Users/Christos Gkoumas/IdeaProjects/DistributedSystemsProject/src/main/Data.csv";
         new Master(path, 5, 20, 0.1, 0.5, 4200, -1, -1).start();
     }
 
@@ -382,16 +377,6 @@ public class Master{
             int t_cols = (int) (Math.round(t_score * gc));
             i_rows[temp_indexes[i]] = t_rows;
             i_cols[temp_indexes[i]] = t_cols;
-            /*if(i != size-1) {
-                i_rows[temp_indexes[i]] = t_rows;
-                i_cols[temp_indexes[i]] = t_cols;
-            }
-            else{
-                i_rows[temp_indexes[i]] = gr;
-                i_cols[temp_indexes[i]] = gc;
-            }*/
-            /*gr -= t_rows;
-            gc -= t_cols;*/
         }
         int t = 0, t1 = 0;
         for(int i = 0; i < size; i++){
@@ -417,7 +402,6 @@ public class Master{
      */
     private void dist() {
         //Reinitialize numerous variables for different kind of datasets
-        //trained = false;
         accept = false;
         POIS = null;
         Bin = null;
@@ -513,11 +497,7 @@ public class Master{
      * @param radius the radius around the user to search in KM
      * @return a list of pois
      */
-    private ArrayList<POI> getRecommendation(int row, int n, double lat, double lon, double radius)
-    {
-        System.out.println("User: " + row);
-        System.out.println("K: " + n);
-        System.out.println("Rad: " + radius);
+    private ArrayList<POI> getRecommendation(int row, int n, double lat, double lon, double radius) {
         //Get user row and copy the pois info
         double[][] user = tUI.getRowMatrix(row).getData();
         POI[] poi = pois.clone();
@@ -581,8 +561,6 @@ public class Master{
         }
         double normalization = (pow(U.getFrobeniusNorm(), 2) + pow(I.getFrobeniusNorm(), 2))*lamda;
         err += normalization;
-        //err += lamda*(I.getFrobeniusNorm() + U.getFrobeniusNorm());
-        //System.out.println(lamda*(I.getFrobeniusNorm() + U.getFrobeniusNorm()));
         return err;
     }
 
@@ -706,7 +684,6 @@ public class Master{
                 else{
                     out.writeBoolean(true);
                     out.flush();
-                    //out.writeObject(getRecommendation(i,j,lat,lon,radius));
                     ArrayList<POI> temp = getRecommendation(i,j,lat,lon,radius);
                     out.writeInt(temp.size());
                     out.flush();
