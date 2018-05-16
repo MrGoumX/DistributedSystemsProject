@@ -503,13 +503,11 @@ public class Master{
         //Get user row and copy the pois info
         double[][] user = tUI.getRowMatrix(row).getData();
         POI[] poi = pois.clone();
-        int[] pos = new int[user[0].length];
         //set 0 where the user has been
         for(int i = 0; i < user[0].length; i++){
             if(Bin.getEntry(row, i)>0){
                 user[0][i] = Double.NEGATIVE_INFINITY;
             }
-            pos[i] = i;
         }
         int size = user[0].length;
         //sort the array
