@@ -528,7 +528,7 @@ public class Master{
         int count = 0;
         final int R = 6371;
         double met = radius*1000;
-        //add the places where the user might be interested to go and is rad KM around him
+        //add the places where the user might be interested to go and is x kilometers around him
         for(int i = 0; i < size; i++){
             double latDist = Math.toRadians(poi[i].getLatitude() - lat);
             double lonDist = Math.toRadians(poi[i].getLongitude() - lon);
@@ -666,11 +666,11 @@ public class Master{
      */
     public void client(){
         try {
-            int i = in.readInt();
-            int j = in.readInt();
-            double lat = in.readDouble();
-            double lon = in.readDouble();
-            double radius = in.readDouble();
+            int i = in.readInt(); // user id
+            int j = in.readInt(); // top k
+            double lat = in.readDouble(); // user latitude
+            double lon = in.readDouble(); // user longtitude
+            double radius = in.readDouble(); // range of recommendation based on location
             out.writeBoolean(trained);
             out.flush();
             if (!trained) {
