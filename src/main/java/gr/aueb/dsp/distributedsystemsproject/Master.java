@@ -13,6 +13,7 @@ import java.net.Socket;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static java.lang.StrictMath.pow;
@@ -389,7 +390,7 @@ public class Master{
         for(int i = 0; i < size-1; i++){
             int m_i = i;
             for(int j = i+1; j < size; j++){
-                if(temp_times[j] > temp_times[m_i]) m_i = j;
+                if(temp_times[j] < temp_times[m_i]) m_i = j;
                 long temp = temp_times[m_i];
                 int temp2 = temp_indexes[m_i];
                 temp_times[m_i] = temp_times[i];
@@ -418,8 +419,6 @@ public class Master{
         for(int i = 0; i < size; i++){
             int rows = t + i_rows[i]; // start to elaborate from row t to rr*score(j).
             int cols = t1 + i_cols[i]; // start to elaborate from column t1 to rc*score(j).
-            rowsf.add(i, rows);
-            colsf.add(i, cols);
             if(i != size-1){ // if current worker isn't the last worker.
                 rowsf.add(i, rows);
                 colsf.add(i, cols);
@@ -494,8 +493,16 @@ public class Master{
             for(Long l : times){
                 System.out.println("Time: " + l);
             }
+
             // Calculate starts based on time
-            calcStartsTime(workers.size());
+            long max = times.stream().collect(Collectors.summarizingLong((Long::longValue))).getMax();
+            long min = times.stream().collect(Collectors.summarizingLong((Long::longValue))).getMin();
+            if((double)min/max < .9){
+                calcStartsTime(workers.size());
+            }
+
+
+
 
             System.out.println("Trained with error: " + currError);
         }
