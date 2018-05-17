@@ -501,15 +501,15 @@ public class Master{
      */
     private ArrayList<POI> getRecommendation(int row, int n, double lat, double lon, double radius) {
         //Get user row and copy the pois info
-        double[][] user = tUI.getRowMatrix(row).getData();
-        POI[] poi = pois.clone();
+        double[][] user = tUI.getRowMatrix(row).getData(); // tUI is trained row for specific user.
+        POI[] poi = pois.clone(); // pois is a copy of poi data.
         //set 0 where the user has been
-        for(int i = 0; i < user[0].length; i++){
+        for(int i = 0; i < user[0].length; i++){ // if user has gone to this place, don't put it at recommendation.
             if(Bin.getEntry(row, i)>0){
                 user[0][i] = Double.NEGATIVE_INFINITY;
             }
         }
-        int size = user[0].length;
+        int size = user[0].length; // how many pois exists.
         //sort the array
         for (int i = 0; i < size-1; i++)
         {
@@ -525,6 +525,8 @@ public class Master{
             poi[i] = temp2;
         }
         ArrayList<POI> rec = new ArrayList<>();
+
+        // calculation of distance between user and pois.
         int count = 0;
         final int R = 6371;
         double met = radius*1000;
@@ -539,11 +541,12 @@ public class Master{
             double distance = R * c * 1000;
             distance = Math.pow(distance, 2);
             distance = Math.sqrt(distance);
+            // if user hasn't gone and distance is valid then add poi to list.
             if(user[0][i]!=Double.NEGATIVE_INFINITY && distance <= met){
                 poi[i].setDistance(distance);
                 rec.add(poi[i]);
                 count++;
-                if(count == n) break;
+                if(count == n) break; // number of maximum pois defined by user.
             }
         }
         return rec;
@@ -667,16 +670,16 @@ public class Master{
     public void client(){
         try {
             int i = in.readInt(); // user id
-            int j = in.readInt(); // top k
+            int j = in.readInt(); // top k recommendations to send.
             double lat = in.readDouble(); // user latitude
             double lon = in.readDouble(); // user longtitude
-            double radius = in.readDouble(); // range of recommendation based on location
-            out.writeBoolean(trained);
+            double range = in.readDouble(); // range of recommendation based on location
+            out.writeBoolean(trained); // send boolean trained = arrays are ready.
             out.flush();
             if (!trained) {
                 out.writeObject("Matrices are not trained yet. So not recommendation for you. For now. OK?");
                 out.flush();
-            } else {
+            } else { // check if user id is valid.
                 if(i < 0 || i > sol-1){
                     out.writeBoolean(false);
                     out.flush();
@@ -684,7 +687,7 @@ public class Master{
                 else{
                     out.writeBoolean(true);
                     out.flush();
-                    ArrayList<POI> temp = getRecommendation(i,j,lat,lon,radius);
+                    ArrayList<POI> temp = getRecommendation(i,j,lat,lon,range);
                     out.writeObject(temp);
                     out.flush();
                 }
