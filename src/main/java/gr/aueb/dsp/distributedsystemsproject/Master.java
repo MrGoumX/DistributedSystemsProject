@@ -83,6 +83,7 @@ public class Master{
      *  method
      */
     public static void main(String[] args) {
+        // CSV File Directory
         String filename = "Data.csv" ;
         String path = System.getProperty("user.dir") + File.separator + "src" + File.separator + "main" + File.separator + "java" + File.separator + "gr" + File.separator + "aueb" + File.separator + "dsp" + File.separator + "distributedsystemsproject" + File.separator + filename;
         new Master(path, 5, 20, 0.1, 0.5, 4200, -1, -1).start();
@@ -206,7 +207,7 @@ public class Master{
     }
 
     /**
-     * The method that opens the server and differentiate the client from the worker.
+     * The method that opens the server and differentiates the client from the worker.
      * Also read property of connection and decide if its a client or a worker to do proper actions.
      */
     private void startServer(){
@@ -268,9 +269,11 @@ public class Master{
      */
     private void initUI(){
         initMatrices(filename); // initialize for first time all matrices.
+        // Create matrices U (X) and I (Y) for training
         U = MatrixUtils.createRealMatrix(sol, k);
         I = MatrixUtils.createRealMatrix(sor, k);
         JDKRandomGenerator ran = new JDKRandomGenerator(1);
+        // Fill U & I with random values
         for(int i = 0; i < U.getRowDimension(); i++){
             for(int j = 0; j < U.getColumnDimension(); j++){
                 U.setEntry(i, j, ran.nextDouble());
@@ -281,39 +284,54 @@ public class Master{
                 I.setEntry(i,j, ran.nextDouble());
             }
         }
+        // Re-initiate array pois that holds the POI Data from the JSON file
         pois = new POI[POIS.getColumnDimension()];
+        // Reset arraylist for another training
         scores.clear();
         rowsf.clear();
         colsf.clear();
         IntStream.range(0, times.size()).forEach(i -> times.set(i, (long) 0));
+        // Read POI Information from JSON file using JSONParser (com.googlecode.json-simple)
         String j_path = System.getProperty("user.dir") + File.separator + "src" + File.separator + "main" + File.separator + "java" + File.separator + "gr" + File.separator + "aueb" + File.separator + "dsp" + File.separator + "distributedsystemsproject" + File.separator + "POIs.json";
         JSONParser parser = new JSONParser();
         try{
+            // Read the whole object and parse it
             Object obj = parser.parse(new FileReader(j_path));
             JSONObject jsonObject = (JSONObject) obj;
+            // For every object of this object get its info
             for(int i = 0; i < POIS.getColumnDimension(); i++){
+                // POI ID
                 Integer temp_i = i;
+                // Get the poi object from the above JSONObject
                 JSONObject list = (JSONObject) jsonObject.get(temp_i.toString());
                 int id = i;
+                // POI UID
                 String r_id = (String) list.get("POI");
+                // POI Latitude
                 double lat = (double) list.get("latidude");
+                // POI Longitude
                 double lon = (double) list.get("longitude");
+                // POI Photo lihk
                 String photo = (String) list.get("photos");
+                // POI Category
                 String cat = (String) list.get("POI_category_id");
+                // POI Name
                 String name = (String) list.get("POI_name");
+                // Create POI Object and add it to the array
                 POI temp = new POI(id, r_id, lat, lon, photo, cat, name);
                 pois[i] = temp;
             }
         }
         catch (Exception e){
         }
+        // Initiate scores arraylist
         for(int i = 0; i < workers.size(); i++){
             scores.add(i, 0);
         }
     }
 
     /**
-     * The method that calculates how to distribute the matrices
+     * The method that calculates how to distribute the matrices based on PC Specs (CPU & RAM)
      */
     private void calcStarts(int size) {
         // total stats for all the workers
@@ -348,20 +366,30 @@ public class Master{
         }
     }
 
+
+    /**
+     *  *** BONUS ***
+     * The method that calculates how to distribute the matrices based on previous training session based on training time
+     */
     private void calcStartsTime(int size){
+        // Sum the total time needed from the workers
         long total = times.stream().mapToLong(i -> i.longValue()).sum();
+        // Create temporary arrays for keeping the indexes for the sort below
         long[] temp_times = new long[size];
         int[] temp_indexes = new int[size];
+        // Initiate the rows and columns number to give
         int[] i_rows = new int[size];
         int[] i_cols = new int[size];
+        // Populate arrays
         for(int i = 0; i < size; i++){
             temp_times[i] = times.get(i);
             temp_indexes[i] = i;
         }
+        // Sort the arrays based on descending time
         for(int i = 0; i < size-1; i++){
             int m_i = i;
             for(int j = i+1; j < size; j++){
-                if(temp_times[j] < temp_times[m_i]) m_i = j;
+                if(temp_times[j] > temp_times[m_i]) m_i = j;
                 long temp = temp_times[m_i];
                 int temp2 = temp_indexes[m_i];
                 temp_times[m_i] = temp_times[i];
@@ -370,30 +398,37 @@ public class Master{
                 temp_indexes[i] = temp2;
             }
         }
+        // Calculate rows and columns to give on every worker based on its time beginning from the slowest one
         int gr = sol, gc = sor;
         for(int i = 0; i < size; i++){
+            // Calculate remaining time from the total time
             double reversed = total - temp_times[i];
+            // Calculate score rounded
             double t_score = (reversed/total)/(size-1);
-            //System.out.println("Score: " + t_score);
+            // Calculate rows and columns to give
             int t_rows = (int) (Math.round(t_score * gr));
             int t_cols = (int) (Math.round(t_score * gc));
+            // Save it to the unsorted index
             i_rows[temp_indexes[i]] = t_rows;
             i_cols[temp_indexes[i]] = t_cols;
         }
+        // t and t1 contains the last element's indexes of U and I matrices, which has already elaborated from a worker.
+        // so current worker elaborates only elements after indexes t and t1.
         int t = 0, t1 = 0;
         for(int i = 0; i < size; i++){
-            int rows = t + i_rows[i];
-            int cols = t1 + i_cols[i];
+            int rows = t + i_rows[i]; // start to elaborate from row t to rr*score(j).
+            int cols = t1 + i_cols[i]; // start to elaborate from column t1 to rc*score(j).
             rowsf.add(i, rows);
             colsf.add(i, cols);
-            if(i != size-1){
+            if(i != size-1){ // if current worker isn't the last worker.
                 rowsf.add(i, rows);
                 colsf.add(i, cols);
             }
-            else {
+            else { // else if current worker is the last one should to elaborate all the rest elements.
                 rowsf.add(i, POIS.getRowDimension());
                 colsf.add(i, POIS.getColumnDimension());
             }
+            // update t and t1.
             t = rows;
             t1 = cols;
         }
@@ -403,18 +438,21 @@ public class Master{
      * Matrices distribution
      */
     private void dist() {
-        //Reinitialize numerous variables for different kind of datasets
+        //Don't accept incoming workers
         accept = false;
+        //Reinitialize numerous variables for different kind of datasets
         POIS = null;
         Bin = null;
         C = null;
         currError = 0;
         //Initializes all the needed metrics, such as score and matrices U, I for the start of the training
         initUI();
+        //Send Bin and C matrices to workers
         for(int i = 0; i < workers.size(); i++){
             workers.set(i, new Work(workers.get(i).getSocket(), workers.get(i).getOut(), workers.get(i).getIn(), "BinC", Bin, C));
         }
         startWork();
+        //Calculate starts for each worker
         calcStarts(workers.size());
         for(int i = 0; i < iterations; i++){ // for each iteration of training
             int size = workers.size(); // so if connection list updated at the middle of an iteration, there isn't problem because still used old size.
@@ -423,20 +461,26 @@ public class Master{
             int br = 0; // br is the index of row of U to start elaboration of each worker.
             int bc = 0; // bc is the index of column of I to start elaboration of each worker.
 
+            // Train U (X)
             for(int j = 0; j < size; j++) { // for each worker
                 workers.set(j, new Work(workers.get(j).getSocket(), workers.get(j).getOut(), workers.get(j).getIn(), "TrainU", U, I, br, rowsf.get(j), k, lamda));
                 br = rowsf.get(j);
             }
             startWork();
+            // Combine U (X)
             combineU();
+            // Train I (Y)
             for(int j = 0; j < size; j++) {
                 workers.set(j, new Work(workers.get(j).getSocket(), workers.get(j).getOut(), workers.get(j).getIn(), "TrainI", U, I, bc, colsf.get(j), k, lamda));
                 bc = colsf.get(j);
             }
             startWork();
+            // Combine I (Y)
             combineI();
+            // Create trained POIS matrix
             tUI = U.multiply(I.transpose());
 
+            // Get error and compare it to the previous one
             double prevError;
             if(i==0){
                 prevError = currError = getError();
@@ -450,10 +494,12 @@ public class Master{
             for(Long l : times){
                 System.out.println("Time: " + l);
             }
+            // Calculate starts based on time
             calcStartsTime(workers.size());
 
             System.out.println("Trained with error: " + currError);
         }
+        // When matrices have finished training accept more workers and clients
         accept = true;
         trained = true;
 
@@ -466,10 +512,13 @@ public class Master{
     private void combineU() {
         int br = 0;
         for(int i = 0; i < workers.size(); i++){
+            // Get U from worker and create RealMatrix
             double [][] temp = workers.get(i).getU();
             RealMatrix TU = MatrixUtils.createRealMatrix(temp);
+            // Replace the rows the worker trained
             IntStream.range(br, rowsf.get(i)).parallel().forEach(j -> U.setRowMatrix(j, TU.getRowMatrix(j)));
             br = rowsf.get(i);
+            // Update train time
             times.set(i, workers.get(i).getNanotime());
         }
     }
@@ -480,10 +529,13 @@ public class Master{
     private void combineI(){
         int bc = 0;
         for(int i = 0; i < workers.size(); i++){
+            // Get I from worker and create RealMatrix
             double[][] temp = workers.get(i).getI();
             RealMatrix TI = MatrixUtils.createRealMatrix(temp);
+            // Replace the rows the worker trained
             IntStream.range(bc, colsf.get(i)).parallel().forEach(j -> I.setRowMatrix(j, TI.getRowMatrix(j)));
             bc = colsf.get(i);
+            // Update train time with U training time
             times.set(i, workers.get(i).getNanotime()+times.get(i));
         }
     }
@@ -504,33 +556,36 @@ public class Master{
         double[][] user = tUI.getRowMatrix(row).getData(); // tUI is trained row for specific user.
         POI[] poi = pois.clone(); // pois is a copy of poi data.
         //set 0 where the user has been
-        for(int i = 0; i < user[0].length; i++){ // if user has gone to this place, don't put it at recommendation.
+        for(int i = 0; i < user[0].length; i++){ // if user has gone to this place, set its value to NEGATIVE_INFINITY (guard value) so that it's not gonna be added to the recommendation
             if(Bin.getEntry(row, i)>0){
                 user[0][i] = Double.NEGATIVE_INFINITY;
             }
         }
         int size = user[0].length; // how many pois exists.
-        //sort the array
+        //sort the array based on descending values using select sort
         for (int i = 0; i < size-1; i++)
         {
-            int min_idx = i;
+            int max_idx = i; // Max index
             for (int j = i+1; j < size; j++)
-                if (user[0][j] > user[0][min_idx])
-                    min_idx = j;
-            double temp = user[0][min_idx];
-            POI temp2 = poi[min_idx];
-            user[0][min_idx] = user[0][i];
-            poi[min_idx] = poi[i];
+                if (user[0][j] > user[0][max_idx])
+                    max_idx = j; // if value is larger than the current max then exchange the values and the pois
+            double temp = user[0][max_idx];
+            POI temp2 = poi[max_idx];
+            user[0][max_idx] = user[0][i];
+            poi[max_idx] = poi[i];
             user[0][i] = temp;
             poi[i] = temp2;
         }
+        // create the recommendation arraylist
         ArrayList<POI> rec = new ArrayList<>();
 
-        // calculation of distance between user and pois.
+        // count of pois added to recommendation
         int count = 0;
+        // Radius of earth is kilometers
         final int R = 6371;
+        // Given radius from user in meters
         double met = radius*1000;
-        //add the places where the user might be interested to go and is x kilometers around him
+        //add the places where the user might be interested to go and is x kilometers around him using Haversine formula
         for(int i = 0; i < size; i++){
             double latDist = Math.toRadians(poi[i].getLatitude() - lat);
             double lonDist = Math.toRadians(poi[i].getLongitude() - lon);
@@ -557,11 +612,13 @@ public class Master{
      */
     private double getError(){
         double err = 0;
+        // base error calculation
         for(int i = 0; i < sol; i++){
             for(int j = 0; j < sor; j++){
                 err += C.getEntry(i,j)*(pow((Bin.getEntry(i,j)-tUI.getEntry(i,j)),2));
             }
         }
+        // calculate normalization term
         double normalization = (pow(U.getFrobeniusNorm(), 2) + pow(I.getFrobeniusNorm(), 2))*lamda;
         err += normalization;
         return err;
@@ -574,7 +631,7 @@ public class Master{
         try {
             String line; // line stores temporary each line of .csv file.
             BufferedReader br = new BufferedReader(new FileReader(filename));
-
+            // If the constructor values are unknown, then find matrix dimensions and read the csv values in POIS matrix
             if (sol < 0 || sor < 0) {
                 int max_user = -1;
                 int max_poi = -1;
@@ -598,6 +655,7 @@ public class Master{
                 // create and initialize a C matrix.
                 C = new OpenMapRealMatrix(sol, sor);
 
+                // reads the values and builds the Binary matrix
                 --size;
                 for (; size >= 0; --size) {
                     int user = Integer.parseInt(lines.get(size)[0]);
@@ -607,6 +665,7 @@ public class Master{
 
                 }
             }else{
+                //if the values of the matrix are given in the constructor then create the matrices immediately and read the values from the CSV file
 
                 // create and initialize a POIS matrix, which contains csv elements of each point of interest.
                 POIS = new OpenMapRealMatrix(sol, sor);
@@ -615,6 +674,7 @@ public class Master{
                 // create and initialize a C matrix.
                 C = new OpenMapRealMatrix(sol, sor);
 
+                // reads the values and creates and binary matrix
                 while ((line = br.readLine()) != null) {
                     String[] data = (line.split(", ")); // lines is a list of arrays. Each String array contains csv values for one line.
                     int user = Integer.parseInt(data[0]);
@@ -625,6 +685,7 @@ public class Master{
 
             }
 
+            // Builds the C matrix based on POIS matrix
             for (int i=0; i<sol; i++){
                 for(int j=0; j<sor; j++){
                     C.setEntry(i, j, 1 + 40 * POIS.getEntry(i, j));
@@ -638,7 +699,7 @@ public class Master{
     }
 
     /**
-     * Worker manager method
+     * Worker manager method that gets the stats from the worker and adds its values to specified arraylist
      */
     private void worker(){
         try{
@@ -655,9 +716,9 @@ public class Master{
             }
             w.start(); // read resources from worker
             w.join();
-            cores.add(w.getCores());
-            ram.add(w.getRam());
-            times.add((long) 0);
+            cores.add(w.getCores()); // Add how many cores to arraylist cores
+            ram.add(w.getRam()); // Add how much ram to arraylist ram
+            times.add((long) 0); // Initiate train time to zero
         }
         catch (InterruptedException e){
             e.printStackTrace();
@@ -665,12 +726,12 @@ public class Master{
     }
 
     /**
-     * Client manager method
+     * Client manager method that sends recommendations
      */
     public void client(){
         try {
-            int i = in.readInt(); // user id
-            int j = in.readInt(); // top k recommendations to send.
+            int user = in.readInt(); // user id
+            int k = in.readInt(); // top k recommendations to send.
             double lat = in.readDouble(); // user latitude
             double lon = in.readDouble(); // user longtitude
             double range = in.readDouble(); // range of recommendation based on location
@@ -680,15 +741,15 @@ public class Master{
                 out.writeObject("Matrices are not trained yet. So not recommendation for you. For now. OK?");
                 out.flush();
             } else { // check if user id is valid.
-                if(i < 0 || i > sol-1){
-                    out.writeBoolean(false);
+                if(k < 0 || k > sol-1){
+                    out.writeBoolean(false); // Send that the user given is out of bounds
                     out.flush();
                 }
                 else{
-                    out.writeBoolean(true);
+                    out.writeBoolean(true); // Send that the user is valid
                     out.flush();
-                    ArrayList<POI> temp = getRecommendation(i,j,lat,lon,range);
-                    out.writeObject(temp);
+                    ArrayList<POI> temp = getRecommendation(user,k,lat,lon,range); // Get recommendation arraylist
+                    out.writeObject(temp); // Send the recommendation arraylist
                     out.flush();
                 }
             }

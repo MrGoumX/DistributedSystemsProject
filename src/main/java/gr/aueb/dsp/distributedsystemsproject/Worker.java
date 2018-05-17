@@ -76,6 +76,7 @@ public class Worker extends Thread{
      * Starting method
      */
     public synchronized void run(){
+        // receives messages for a socket and parses it
         while(true){
             try{
                 message = (String) in.readObject();
@@ -86,6 +87,7 @@ public class Worker extends Thread{
                 break;
             }
             if(message.equalsIgnoreCase("Hello, I'm Master")){
+                // Connect to master initialization
                 ctm = true;
                 init(); // send message to master that you are worker.
             }
