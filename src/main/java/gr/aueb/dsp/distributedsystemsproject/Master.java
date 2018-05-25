@@ -439,6 +439,7 @@ public class Master{
     private void dist() {
         //Don't accept incoming workers
         accept = false;
+        trained = false;
         //Reinitialize numerous variables for different kind of datasets
         POIS = null;
         Bin = null;
@@ -748,7 +749,7 @@ public class Master{
                 out.writeObject("Matrices are not trained yet. So not recommendation for you. For now. OK?");
                 out.flush();
             } else { // check if user id is valid.
-                if(k < 0 || k > sol-1){
+                if(user < 0 || user > sol-1){
                     out.writeBoolean(false); // Send that the user given is out of bounds
                     out.flush();
                 }
